@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
 import { useNavigate, Link } from "react-router-dom";
+import hero from "../assets/Lost&Found.png";
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
@@ -68,11 +69,7 @@ const ManageUsers = () => {
     setPendingAction(null);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
+  // ❌ handleLogout REMOVED (no longer needed)
 
   const otherUsers = users.filter((user) => user._id !== currentUser?.id);
 
@@ -80,65 +77,62 @@ const ManageUsers = () => {
     <div
       style={{
         minHeight: "100vh",
-        background: "#f5f5f5",
-        padding: "40px"
+        backgroundImage: `url(${hero})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        position: "relative"
       }}
     >
+      {/* Overlay */}
       <div
         style={{
+          position: "absolute",
+          inset: 0,
+          background: "rgba(0,0,0,0.6)"
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 2,
           maxWidth: "1200px",
-          margin: "0 auto"
+          margin: "0 auto",
+          padding: "40px",
+          color: "white"
         }}
       >
-        <h1 style={{ marginBottom: "25px" }}>Admin Dashboard</h1>
+        {/* HEADER */}
+        <div style={{ marginBottom: "30px" }}>
+          <h2 style={{ marginBottom: "5px", opacity: 0.8 }}>
+            Admin Dashboard
+          </h2>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "25px"
-          }}
-        >
-          <p style={{ fontSize: "20px", margin: 0 }}>
+          <h1 style={{ fontSize: "38px", marginBottom: "10px" }}>
+            Manage Users
+          </h1>
+
+          <p style={{ fontSize: "18px" }}>
             Welcome, <strong>{currentUser?.fullName}</strong>
           </p>
-
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: "10px 16px",
-              border: "none",
-              borderRadius: "6px",
-              background: "#ef4444",
-              color: "white",
-              cursor: "pointer"
-            }}
-          >
-            Logout
-          </button>
         </div>
 
+        {/* ACTION BUTTONS */}
         <div
           style={{
-            background: "white",
-            padding: "20px",
-            borderRadius: "12px",
-            boxShadow: "0 5px 15px rgba(0,0,0,0.08)",
-            marginBottom: "25px",
+            position: "absolute",
+            top: "40px",
+            right: "40px",
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center"
+            gap: "10px"
           }}
         >
-          <h2 style={{ margin: 0 }}>Manage Users</h2>
-
           <Link to="/admin">
             <button
               style={{
                 padding: "10px 16px",
-                border: "none",
                 borderRadius: "6px",
+                border: "none",
                 background: "#3b82f6",
                 color: "white",
                 cursor: "pointer"
@@ -147,29 +141,22 @@ const ManageUsers = () => {
               Back
             </button>
           </Link>
+
+          {/* ❌ Logout button REMOVED ONLY */}
         </div>
 
+        {/* MESSAGE */}
         {message && (
-          <p
-            style={{
-              marginBottom: "20px",
-              color:
-                message.toLowerCase().includes("failed") ||
-                message.toLowerCase().includes("denied") ||
-                message.toLowerCase().includes("cannot")
-                  ? "red"
-                  : "green"
-            }}
-          >
-            {message}
-          </p>
+          <p style={{ marginBottom: "20px" }}>{message}</p>
         )}
 
+        {/* USER CARDS */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: "20px"
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "25px",
+            marginTop: "30px"
           }}
         >
           {otherUsers.map((user) => {
@@ -180,122 +167,49 @@ const ManageUsers = () => {
               <div
                 key={user._id}
                 style={{
-                  background: "white",
+                  background: "rgba(255,255,255,0.95)",
                   padding: "25px",
                   borderRadius: "12px",
-                  boxShadow: "0 5px 15px rgba(0,0,0,0.08)"
+                  color: "#111"
                 }}
               >
-                <h3 style={{ marginTop: 0 }}>{user.fullName}</h3>
-                <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>Phone:</strong> {user.phone}</p>
-                <p><strong>Role:</strong> {user.role}</p>
+                <h3>{user.fullName}</h3>
+                <p>Email: {user.email}</p>
+                <p>Phone: {user.phone}</p>
+                <p>Role: {user.role}</p>
 
-                <div
-                  style={{
-                    marginTop: "18px",
-                    display: "flex",
-                    gap: "10px",
-                    flexWrap: "wrap"
-                  }}
-                >
-                  {user.role !== "user" && (
-                    <button
-                      onClick={() => showRoleConfirm(user, "user")}
-                      style={{
-                        padding: "10px 15px",
-                        border: "none",
-                        borderRadius: "6px",
-                        color: "white",
-                        cursor: "pointer",
-                        background: "#3b82f6"
-                      }}
-                    >
-                      Make User
-                    </button>
-                  )}
-
-                  {user.role !== "admin" && (
-                    <button
-                      onClick={() => showRoleConfirm(user, "admin")}
-                      style={{
-                        padding: "10px 15px",
-                        border: "none",
-                        borderRadius: "6px",
-                        color: "white",
-                        cursor: "pointer",
-                        background: "#10b981"
-                      }}
-                    >
-                      Make Admin
-                    </button>
-                  )}
+                <div style={{ marginTop: "15px", display: "flex", gap: "10px" }}>
+                  <button
+                    onClick={() => showRoleConfirm(user, "admin")}
+                    style={{
+                      background: "#10b981",
+                      color: "white",
+                      border: "none",
+                      padding: "8px 12px",
+                      borderRadius: "6px"
+                    }}
+                  >
+                    Make Admin
+                  </button>
 
                   <button
                     onClick={() => showDeleteConfirm(user)}
                     style={{
-                      padding: "10px 15px",
-                      border: "none",
-                      borderRadius: "6px",
+                      background: "#ef4444",
                       color: "white",
-                      cursor: "pointer",
-                      background: "#ef4444"
+                      border: "none",
+                      padding: "8px 12px",
+                      borderRadius: "6px"
                     }}
                   >
-                    Delete User
+                    Delete
                   </button>
                 </div>
 
                 {isPendingForThisUser && (
-                  <div
-                    style={{
-                      marginTop: "18px",
-                      padding: "15px",
-                      borderRadius: "10px",
-                      background: "#f3f4f6",
-                      border: "1px solid #d1d5db"
-                    }}
-                  >
-                    <p style={{ marginTop: 0 }}>
-                      {pendingAction.type === "role" && pendingAction.role === "admin" &&
-                        `Are you sure you want to make ${pendingAction.fullName} an admin?`}
-
-                      {pendingAction.type === "role" && pendingAction.role === "user" &&
-                        `Are you sure you want to make ${pendingAction.fullName} a user?`}
-
-                      {pendingAction.type === "delete" &&
-                        `Are you sure you want to delete ${pendingAction.fullName}?`}
-                    </p>
-
-                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                      <button
-                        onClick={handleConfirmAction}
-                        style={{
-                          padding: "10px 15px",
-                          border: "none",
-                          borderRadius: "6px",
-                          color: "white",
-                          cursor: "pointer",
-                          background: "#111827"
-                        }}
-                      >
-                        Confirm
-                      </button>
-
-                      <button
-                        onClick={handleCancelAction}
-                        style={{
-                          padding: "10px 15px",
-                          border: "none",
-                          borderRadius: "6px",
-                          color: "white",
-                          cursor: "pointer",
-                          background: "#9ca3af"
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
+                  <div style={{ marginTop: "15px" }}>
+                    <button onClick={handleConfirmAction}>Confirm</button>
+                    <button onClick={handleCancelAction}>Cancel</button>
                   </div>
                 )}
               </div>

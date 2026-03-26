@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
+import hero from "../assets/Lost&Found.png";
 
 const Dashboard = () => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -12,136 +13,219 @@ const Dashboard = () => {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f5f5f5",
-        padding: "40px"
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto"
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "25px"
-          }}
-        >
-          <div>
-            <h1 style={{ marginBottom: "10px" }}>User Dashboard</h1>
-            <p style={{ fontSize: "20px", margin: 0 }}>
-              Welcome, <strong>{user?.fullName}</strong>
-            </p>
-          </div>
+    <div style={containerStyle}>
 
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: "10px 16px",
-              border: "none",
-              borderRadius: "6px",
-              background: "#ef4444",
-              color: "white",
-              cursor: "pointer"
-            }}
-          >
+      {/* Background */}
+      <div style={bgStyle}></div>
+
+      {/* Overlay */}
+      <div style={overlayStyle}></div>
+
+      {/* Content */}
+      <div style={contentWrapper}>
+
+        {/* Header */}
+        <div style={header}>
+          <h1 style={title}>User Dashboard</h1>
+
+          <button onClick={handleLogout} style={logoutButton}>
             Logout
           </button>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: "20px"
-          }}
-        >
-          <div style={cardStyle}>
-            <h3>Lost Item Management</h3>
-            <p>Report a lost item or browse all lost item reports.</p>
+        {/* Welcome */}
+        <div style={welcome}>
+          <h2 style={welcomeTitle}>
+            Welcome, {user?.fullName}
+          </h2>
 
-            <div style={buttonRowStyle}>
-              <Link to="/report-lost">
-                <button style={{ ...buttonStyle, background: "#3b82f6" }}>
-                  Report Lost Item
-                </button>
-              </Link>
-
-              <Link to="/lost-items">
-                <button style={{ ...buttonStyle, background: "#10b981" }}>
-                  View Lost Items
-                </button>
-              </Link>
-            </div>
-          </div>
-
-          <div style={cardStyle}>
-            <h3>Found Item Management</h3>
-            <p>Report a found item or browse all found item reports.</p>
-
-            <div style={buttonRowStyle}>
-              <Link to="/report-found">
-                <button style={{ ...buttonStyle, background: "#3b82f6" }}>
-                  Report Found Item
-                </button>
-              </Link>
-
-              <Link to="/found-items">
-                <button style={{ ...buttonStyle, background: "#10b981" }}>
-                  View Found Items
-                </button>
-              </Link>
-            </div>
-          </div>
-
-          <div style={cardStyle}>
-            <h3>Claim Management</h3>
-            <p>Submit a claim for an item and track its status.</p>
-
-            <div style={buttonRowStyle}>
-              <Link to="/claim">
-                <button style={{ ...buttonStyle, background: "#3b82f6" }}>
-                  Submit a Claim
-                </button>
-              </Link>
-
-              <Link to="/claim-status">
-                <button style={{ ...buttonStyle, background: "#10b981" }}>
-                  Track Claim Status
-                </button>
-              </Link>
-            </div>
-          </div>
+          <p style={welcomeText}>
+            Manage your lost, found items and claims.
+          </p>
         </div>
+
+        {/* Cards */}
+        <div style={grid}>
+
+          {/* LOST */}
+          <DashboardCard
+            title="Lost Item Management"
+            desc="Report or browse lost items."
+            primaryLink="/report-lost"
+            secondaryLink="/lost-items"
+            primaryText="Report Lost"
+            secondaryText="View Lost"
+          />
+
+          {/* FOUND */}
+          <DashboardCard
+            title="Found Item Management"
+            desc="Report or browse found items."
+            primaryLink="/report-found"
+            secondaryLink="/found-items"
+            primaryText="Report Found"
+            secondaryText="View Found"
+          />
+
+          {/* CLAIM */}
+          <DashboardCard
+            title="Claim Management"
+            desc="Submit and track your claims."
+            primaryLink="/claim"
+            secondaryLink="/claim-status"
+            primaryText="Submit Claim"
+            secondaryText="Track Status"
+          />
+
+        </div>
+
       </div>
     </div>
   );
 };
 
-const cardStyle = {
-  background: "white",
-  padding: "25px",
-  borderRadius: "12px",
-  boxShadow: "0 5px 15px rgba(0,0,0,0.08)"
+/* CARD COMPONENT */
+const DashboardCard = ({
+  title,
+  desc,
+  primaryLink,
+  secondaryLink,
+  primaryText,
+  secondaryText
+}) => (
+  <div style={card}>
+    <h3 style={cardTitle}>{title}</h3>
+    <p style={cardText}>{desc}</p>
+
+    <div style={buttonRow}>
+      <Link to={primaryLink}>
+        <button style={primaryButton}>{primaryText}</button>
+      </Link>
+
+      <Link to={secondaryLink}>
+        <button style={secondaryButton}>{secondaryText}</button>
+      </Link>
+    </div>
+  </div>
+);
+
+/* STYLES */
+
+const containerStyle = {
+  position: "relative",
+  minHeight: "100vh",
+  overflow: "hidden"
 };
 
-const buttonRowStyle = {
-  marginTop: "18px",
+const bgStyle = {
+  position: "absolute",
+  width: "100%",
+  height: "100%",
+  backgroundImage: `url(${hero})`,
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  zIndex: 0
+};
+
+const overlayStyle = {
+  position: "absolute",
+  width: "100%",
+  height: "100%",
+  background: "rgba(0,0,0,0.65)",
+  zIndex: 1
+};
+
+const contentWrapper = {
+  position: "relative",
+  zIndex: 2,
+  maxWidth: "1100px",
+  margin: "0 auto",
+  padding: "40px",
+  color: "white"
+};
+
+const header = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: "30px"
+};
+
+const title = {
+  fontSize: "38px",
+  fontWeight: "700",
+  letterSpacing: "0.5px"
+};
+
+const logoutButton = {
+  padding: "10px 16px",
+  border: "none",
+  borderRadius: "8px",
+  background: "#ef4444",
+  color: "white",
+  cursor: "pointer"
+};
+
+const welcome = {
+  marginBottom: "30px"
+};
+
+const welcomeTitle = {
+  fontSize: "26px",
+  fontWeight: "600",
+  marginBottom: "8px"
+};
+
+const welcomeText = {
+  fontSize: "16px",
+  color: "#e5e7eb"
+};
+
+const grid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+  gap: "20px"
+};
+
+const card = {
+  background: "rgba(255,255,255,0.95)",
+  color: "#111",
+  padding: "22px",
+  borderRadius: "12px"
+};
+
+const cardTitle = {
+  fontSize: "18px",
+  fontWeight: "600",
+  marginBottom: "8px"
+};
+
+const cardText = {
+  fontSize: "14px",
+  color: "#555",
+  marginBottom: "12px"
+};
+
+const buttonRow = {
   display: "flex",
   gap: "10px",
   flexWrap: "wrap"
 };
 
-const buttonStyle = {
-  padding: "10px 15px",
+const primaryButton = {
+  padding: "10px 14px",
   border: "none",
-  borderRadius: "6px",
+  borderRadius: "8px",
+  background: "#3b82f6",
+  color: "white",
+  cursor: "pointer"
+};
+
+const secondaryButton = {
+  padding: "10px 14px",
+  border: "none",
+  borderRadius: "8px",
+  background: "#10b981",
   color: "white",
   cursor: "pointer"
 };

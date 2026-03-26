@@ -45,45 +45,12 @@ const Login = () => {
   };
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        backgroundImage: `url(${hero})`,
-        backgroundSize: "90%",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "center",
-        backgroundColor: "#000",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-start",
-        paddingTop: "140px",
-        position: "relative"
-      }}
-    >
-      {/* Gradient overlay */}
-      <div
-        style={{
-          position: "absolute",
-          width: "100%",
-          height: "100%",
-          background: "linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.2))"
-        }}
-      />
+    <div style={containerStyle}>
+      {/* Overlay */}
+      <div style={overlayStyle} />
 
-      {/* Login Card */}
-      <div
-        style={{
-          position: "relative",
-          width: "450px",
-          background: "rgba(255,255,255,0.9)",
-          backdropFilter: "blur(8px)",
-          padding: "40px",
-          borderRadius: "12px",
-          boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
-          textAlign: "center"
-        }}
-      >
-        <h2 style={{ marginBottom: "25px" }}>Login</h2>
+      <div style={cardStyle}>
+        <h2 style={titleStyle}>Login</h2>
 
         <form onSubmit={handleSubmit}>
           <input
@@ -112,19 +79,14 @@ const Login = () => {
         </form>
 
         {message && (
-          <p
-            style={{
-              marginTop: "15px",
-              color: message === "Login successful!" ? "green" : "red"
-            }}
-          >
+          <p style={{ marginTop: "12px", color: message === "Login successful!" ? "green" : "red" }}>
             {message}
           </p>
         )}
 
-        <p style={{ marginTop: "20px" }}>
+        <p style={footerText}>
           Don't have an account?{" "}
-          <Link to="/register" style={{ color: "#3b82f6" }}>
+          <Link to="/register" style={linkStyle}>
             Register
           </Link>
         </p>
@@ -133,13 +95,45 @@ const Login = () => {
   );
 };
 
+const containerStyle = {
+  height: "100vh",
+  backgroundImage: "url('/src/assets/Lost&Found.png')",
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  position: "relative"
+};
+
+const overlayStyle = {
+  position: "absolute",
+  width: "100%",
+  height: "100%",
+  background: "rgba(0,0,0,0.65)"
+};
+
+const cardStyle = {
+  position: "relative",
+  width: "420px",
+  background: "#ffffff",
+  padding: "35px",
+  borderRadius: "12px",
+  boxShadow: "0 8px 25px rgba(0,0,0,0.3)",
+  textAlign: "center"
+};
+
+const titleStyle = {
+  marginBottom: "20px",
+  fontWeight: "600"
+};
+
 const inputStyle = {
   width: "100%",
   padding: "12px",
-  marginBottom: "15px",
+  marginBottom: "14px",
   borderRadius: "6px",
-  border: "1px solid #ccc",
-  fontSize: "14px"
+  border: "1px solid #ccc"
 };
 
 const buttonStyle = {
@@ -149,9 +143,18 @@ const buttonStyle = {
   color: "white",
   border: "none",
   borderRadius: "8px",
-  fontSize: "16px",
   fontWeight: "600",
   cursor: "pointer"
+};
+
+const footerText = {
+  marginTop: "15px",
+  fontSize: "14px"
+};
+
+const linkStyle = {
+  color: "#3b82f6",
+  textDecoration: "none"
 };
 
 export default Login;

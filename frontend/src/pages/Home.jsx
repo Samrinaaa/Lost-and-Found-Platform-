@@ -7,18 +7,28 @@ function Home() {
       style={{
         height: "100vh",
         backgroundImage: `url(${hero})`,
-        backgroundSize: "80%", 
+        backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center",
-        backgroundColor: "#000",
         display: "flex",
         justifyContent: "center",
-        alignItems: "flex-start",
-        paddingTop: "120px",
+        alignItems: "center", 
+        position: "relative"
       }}
     >
+      {/* Gradient Overlay */}
       <div
         style={{
+          position: "absolute",
+          width: "100%",
+          height: "100%",
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.4))"
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
           textAlign: "center",
           color: "white",
           maxWidth: "700px",

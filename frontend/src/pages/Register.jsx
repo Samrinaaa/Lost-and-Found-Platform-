@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import "../styles/Auth.css";
+import hero from "../assets/Lost&Found.png";
 
 function Register() {
   const navigate = useNavigate();
@@ -26,8 +26,7 @@ function Register() {
     try {
       const res = await axios.post(
         "http://localhost:5001/api/auth/register",
-        formData,
-        { headers: { "Content-Type": "application/json" } }
+        formData
       );
 
       setSuccess(res.data.message);
@@ -36,74 +35,103 @@ function Register() {
       setTimeout(() => {
         navigate("/login");
       }, 1000);
+
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Registration failed. Please try again.");
-      }
+      setError(err.response?.data?.message || "Registration failed");
       setSuccess("");
     }
   };
 
   return (
-    <div className="auth-container">
-      <div style={{ padding: "20px" }}>
-        <h2>Register</h2>
+    <div style={containerStyle}>
+      <div style={overlayStyle} />
+
+      <div style={cardStyle}>
+        <h2 style={titleStyle}>Register</h2>
 
         {error && <p style={{ color: "red" }}>{error}</p>}
         {success && <p style={{ color: "green" }}>{success}</p>}
 
         <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            name="fullName"
-            placeholder="Full Name"
-            value={formData.fullName}
-            onChange={handleChange}
-            required
-          />
-          <br /><br />
+          <input name="fullName" placeholder="Full Name" onChange={handleChange} style={inputStyle} required />
+          <input name="email" placeholder="Email" onChange={handleChange} style={inputStyle} required />
+          <input name="password" placeholder="Password" type="password" onChange={handleChange} style={inputStyle} required />
+          <input name="phone" placeholder="Phone" onChange={handleChange} style={inputStyle} required />
 
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-          <br /><br />
-
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-          <br /><br />
-
-          <input
-            type="text"
-            name="phone"
-            placeholder="Phone"
-            value={formData.phone}
-            onChange={handleChange}
-            required
-          />
-          <br /><br />
-
-          <button type="submit">Register</button>
+          <button style={buttonStyle}>Register</button>
         </form>
 
-        <p>
-          Already have an account? <Link to="/login">Login here</Link>
+        <p style={footerText}>
+          Already have an account?{" "}
+          <Link to="/login" style={linkStyle}>
+            Login here
+          </Link>
         </p>
       </div>
     </div>
   );
 }
+
+const containerStyle = {
+  height: "100vh",
+  backgroundImage: "url('/src/assets/Lost&Found.png')",
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  position: "relative"
+};
+
+const overlayStyle = {
+  position: "absolute",
+  width: "100%",
+  height: "100%",
+  background: "rgba(0,0,0,0.65)"
+};
+
+const cardStyle = {
+  position: "relative",
+  width: "420px",
+  background: "#ffffff",
+  padding: "35px",
+  borderRadius: "12px",
+  boxShadow: "0 8px 25px rgba(0,0,0,0.3)",
+  textAlign: "center"
+};
+
+const titleStyle = {
+  marginBottom: "20px",
+  fontWeight: "600"
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "12px",
+  marginBottom: "14px",
+  borderRadius: "6px",
+  border: "1px solid #ccc"
+};
+
+const buttonStyle = {
+  width: "100%",
+  padding: "12px",
+  background: "#3b82f6",
+  color: "white",
+  border: "none",
+  borderRadius: "8px",
+  fontWeight: "600",
+  cursor: "pointer"
+};
+
+const footerText = {
+  marginTop: "15px",
+  fontSize: "14px"
+};
+
+const linkStyle = {
+  color: "#3b82f6",
+  textDecoration: "none"
+};
 
 export default Register;
