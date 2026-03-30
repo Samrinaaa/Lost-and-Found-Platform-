@@ -19,10 +19,7 @@ const adminOnly = async (req, res, next) => {
   }
 };
 
-
-
 // ================= USERS MANAGEMENT =================
-
 
 // GET all users
 router.get("/users", auth, adminOnly, async (req, res) => {
@@ -33,7 +30,6 @@ router.get("/users", auth, adminOnly, async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 });
-
 
 // UPDATE user role
 router.put("/users/:id/role", auth, adminOnly, async (req, res) => {
@@ -64,7 +60,6 @@ router.put("/users/:id/role", auth, adminOnly, async (req, res) => {
   }
 });
 
-
 // DELETE user
 router.delete("/users/:id", auth, adminOnly, async (req, res) => {
   try {
@@ -81,17 +76,17 @@ router.delete("/users/:id", auth, adminOnly, async (req, res) => {
 
     await User.findByIdAndDelete(req.params.id);
 
+    console.log(`Admin ${req.user.id} deleted user: ${userToDelete.email}`);
+
     return res.status(200).json({ message: "User deleted successfully." });
 
   } catch (error) {
+    console.error("Delete user error:", error); // 🔥 ADDED
     return res.status(500).json({ message: error.message });
   }
 });
 
-
-
 // ================= LOST ITEMS MANAGEMENT =================
-
 
 // GET all lost items
 router.get("/lost-items", auth, adminOnly, async (req, res) => {
@@ -107,8 +102,6 @@ router.get("/lost-items", auth, adminOnly, async (req, res) => {
   }
 });
 
-
-
 // DELETE lost item
 router.delete("/lost-items/:id", auth, adminOnly, async (req, res) => {
   try {
@@ -121,11 +114,14 @@ router.delete("/lost-items/:id", auth, adminOnly, async (req, res) => {
 
     await LostItem.findByIdAndDelete(req.params.id);
 
+    console.log(`Admin ${req.user.id} deleted lost item: ${item.itemName}`);
+
     return res.status(200).json({
       message: "Lost item deleted successfully."
     });
 
   } catch (error) {
+    console.error("Delete lost item error:", error); 
     return res.status(500).json({ message: error.message });
   }
 });

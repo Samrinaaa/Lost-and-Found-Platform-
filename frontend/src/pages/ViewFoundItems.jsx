@@ -6,21 +6,22 @@ import hero from "../assets/Lost&Found.png";
 const ViewFoundItems = () => {
   const [foundItems, setFoundItems] = useState([]);
   const [message, setMessage] = useState("");
+  const [search, setSearch] = useState(""); // 🔥 ADDED
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
-  useEffect(() => {
-    const fetchFoundItems = async () => {
-      try {
-        const res = await API.get("/found");
-        setFoundItems(res.data);
-      } catch (error) {
-        setMessage("Failed to load found items.");
-      }
-    };
+  const fetchFoundItems = async () => {
+    try {
+      const res = await API.get(`/found?search=${search}`); // 🔥 UPDATED
+      setFoundItems(res.data);
+    } catch (error) {
+      setMessage("Failed to load found items.");
+    }
+  };
 
+  useEffect(() => {
     fetchFoundItems();
-  }, []);
+  }, [search]); // 🔥 UPDATED
 
   return (
     <div
@@ -60,6 +61,22 @@ const ViewFoundItems = () => {
           </p>
         </div>
 
+        {/* 🔥 SEARCH BAR ADDED */}
+        <div style={{ marginBottom: "20px" }}>
+          <input
+            type="text"
+            placeholder="Search found items..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              padding: "10px",
+              width: "300px",
+              borderRadius: "6px",
+              border: "none"
+            }}
+          />
+        </div>
+
         {/* BACK BUTTON */}
         <div
           style={{
@@ -83,7 +100,7 @@ const ViewFoundItems = () => {
         {/* EMPTY STATE */}
         {foundItems.length === 0 ? (
           <div style={emptyBox}>
-            <p>No found items reported yet.</p>
+            <p>No found items found.</p> {/* slight improvement */}
           </div>
         ) : (
           <div style={gridStyle}>

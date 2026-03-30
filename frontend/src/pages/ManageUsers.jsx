@@ -69,8 +69,6 @@ const ManageUsers = () => {
     setPendingAction(null);
   };
 
-  // ❌ handleLogout REMOVED (no longer needed)
-
   const otherUsers = users.filter((user) => user._id !== currentUser?.id);
 
   return (
@@ -142,7 +140,6 @@ const ManageUsers = () => {
             </button>
           </Link>
 
-          {/* ❌ Logout button REMOVED ONLY */}
         </div>
 
         {/* MESSAGE */}

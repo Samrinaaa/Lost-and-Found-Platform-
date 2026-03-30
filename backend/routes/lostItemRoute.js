@@ -18,10 +18,19 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// GET ALL LOST ITEMS
+// GET ALL LOST ITEMS (🔍 UPDATED WITH SEARCH)
 router.get("/", async (req, res) => {
   try {
-    const items = await LostItem.find().populate("userId", "fullName email");
+    const search = req.query.search || "";
+
+    const items = await LostItem.find({
+      $or: [
+        { itemName: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { locationLost: { $regex: search, $options: "i" } }
+      ]
+    }).populate("userId", "fullName email");
+
     res.json(items);
   } catch (error) {
     res.status(500).json({ error: error.message });

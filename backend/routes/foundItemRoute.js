@@ -22,12 +22,19 @@ router.post("/", auth, async (req, res) => {
 });
 
 
-
-// GET ALL FOUND ITEMS
+// GET ALL FOUND ITEMS (🔍 UPDATED WITH SEARCH)
 router.get("/", async (req, res) => {
   try {
 
-    const items = await FoundItem.find()
+    const search = req.query.search || ""; // 🔥 ADDED
+
+    const items = await FoundItem.find({
+      $or: [
+        { itemName: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { locationFound: { $regex: search, $options: "i" } }
+      ]
+    })
       .populate("userId", "fullName email");
 
     res.json(items);
@@ -36,7 +43,6 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 
 
 // GET FOUND ITEM BY ID
@@ -54,7 +60,6 @@ router.get("/:id", async (req, res) => {
 });
 
 
-
 // DELETE FOUND ITEM
 router.delete("/:id", auth, async (req, res) => {
   try {
@@ -67,13 +72,15 @@ router.delete("/:id", auth, async (req, res) => {
 
     await FoundItem.findByIdAndDelete(req.params.id);
 
+    console.log(`User ${req.user.id} deleted found item: ${item.itemName}`); // 🔥 OPTIONAL LOG
+
     res.json({ message: "Found item deleted successfully" });
 
   } catch (error) {
+    console.error("Delete found item error:", error); // 🔥 OPTIONAL
     res.status(500).json({ error: error.message });
   }
 });
-
 
 
 module.exports = router;
