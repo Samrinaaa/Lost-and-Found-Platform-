@@ -2,9 +2,10 @@ const router = require("express").Router();
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const sendEmail = require("../utils/sendEmail");
 const nodemailer = require("nodemailer");
 
-// EMAIL CONFIG
+// (Keep transporter — not used now but safe to keep)
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -54,13 +55,12 @@ router.post("/register", async (req, res) => {
 
     await newUser.save();
 
-    // SEND EMAIL
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Verify your account",
-      html: `<h3>Your OTP is: ${otp}</h3><p>Valid for 10 minutes</p>`,
-    });
+    //reusable email function
+    await sendEmail(
+      email,
+      "Verify your account",
+      `<h3>Your OTP is: ${otp}</h3><p>Valid for 10 minutes</p>`
+    );
 
     console.log("User registered successfully");
 

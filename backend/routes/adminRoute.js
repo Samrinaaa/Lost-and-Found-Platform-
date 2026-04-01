@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 const LostItem = require("../models/LostItem");
+const FoundItem = require("../models/FoundItem"); // ✅ ADDED
 const auth = require("../middleware/auth");
 
 // middleware to allow only admin
@@ -81,7 +82,7 @@ router.delete("/users/:id", auth, adminOnly, async (req, res) => {
     return res.status(200).json({ message: "User deleted successfully." });
 
   } catch (error) {
-    console.error("Delete user error:", error); // 🔥 ADDED
+    console.error("Delete user error:", error);
     return res.status(500).json({ message: error.message });
   }
 });
@@ -93,7 +94,7 @@ router.get("/lost-items", auth, adminOnly, async (req, res) => {
   try {
 
     const items = await LostItem.find()
-      .populate("user", "name email");
+      .populate("userId", "fullName email");
 
     return res.status(200).json(items);
 
@@ -126,6 +127,32 @@ router.delete("/lost-items/:id", auth, adminOnly, async (req, res) => {
   }
 });
 
+
+// ================= FOUND ITEMS MANAGEMENT =================
+// ✅ THIS IS WHAT WAS MISSING
+
+router.delete("/found-items/:id", auth, adminOnly, async (req, res) => {
+  try {
+
+    const item = await FoundItem.findById(req.params.id);
+
+    if (!item) {
+      return res.status(404).json({ message: "Found item not found." });
+    }
+
+    await FoundItem.findByIdAndDelete(req.params.id);
+
+    console.log(`Admin ${req.user.id} deleted found item: ${item.itemName}`);
+
+    return res.status(200).json({
+      message: "Found item deleted successfully."
+    });
+
+  } catch (error) {
+    console.error("Delete found item error:", error);
+    return res.status(500).json({ message: error.message });
+  }
+});
 
 
 module.exports = router;

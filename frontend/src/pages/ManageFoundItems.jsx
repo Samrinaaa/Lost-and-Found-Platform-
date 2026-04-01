@@ -5,6 +5,8 @@ import hero from "../assets/Lost&Found.png";
 
 const ManageFoundItems = () => {
   const [items, setItems] = useState([]);
+  const [confirmId, setConfirmId] = useState(null); // ✅ NEW
+
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
@@ -28,15 +30,9 @@ const ManageFoundItems = () => {
   };
 
   const deleteItem = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this found item?"
-    );
-
-    if (!confirmDelete) return;
-
     try {
       await axios.delete(
-        `http://localhost:5001/api/admin/found-items/${id}`,
+        `http://localhost:5001/api/admin/found-items/${id}`, 
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -44,6 +40,7 @@ const ManageFoundItems = () => {
         }
       );
 
+      setConfirmId(null); // reset UI
       fetchFoundItems();
     } catch (error) {
       console.error("Error deleting found item:", error);
@@ -64,6 +61,7 @@ const ManageFoundItems = () => {
         position: "relative",
       }}
     >
+      {/* Overlay */}
       <div
         style={{
           position: "absolute",
@@ -82,6 +80,7 @@ const ManageFoundItems = () => {
           color: "white",
         }}
       >
+        {/* HEADER */}
         <div style={{ marginBottom: "30px" }}>
           <h2>Admin Dashboard</h2>
           <h1>Manage Found Items</h1>
@@ -90,12 +89,14 @@ const ManageFoundItems = () => {
           </p>
         </div>
 
+        {/* BACK BUTTON */}
         <div style={{ position: "absolute", top: "40px", right: "40px" }}>
           <button onClick={() => navigate("/admin")} style={btnBlue}>
             Back
           </button>
         </div>
 
+        {/* ITEMS */}
         <div style={gridStyle}>
           {items.map((item) => (
             <div key={item._id} style={cardStyle}>
@@ -123,6 +124,7 @@ const ManageFoundItems = () => {
                 {item.userId?.fullName || "Unknown"}
               </p>
 
+              {/* IMAGE */}
               {item.imageUrl && (
                 <img
                   src={item.imageUrl}
@@ -131,12 +133,33 @@ const ManageFoundItems = () => {
                 />
               )}
 
-              <button
-                onClick={() => deleteItem(item._id)}
-                style={btnRed}
-              >
-                Delete
-              </button>
+              {/* ✅ INLINE CONFIRMATION */}
+              {confirmId === item._id ? (
+                <div style={{ marginTop: "10px" }}>
+                  <p>Are you sure you want to delete this item?</p>
+
+                  <button
+                    onClick={() => deleteItem(item._id)}
+                    style={confirmBtn}
+                  >
+                    Confirm
+                  </button>
+
+                  <button
+                    onClick={() => setConfirmId(null)}
+                    style={cancelBtn}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmId(item._id)}
+                  style={btnRed}
+                >
+                  Delete
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -144,6 +167,8 @@ const ManageFoundItems = () => {
     </div>
   );
 };
+
+/* STYLES */
 
 const gridStyle = {
   display: "grid",
@@ -181,6 +206,23 @@ const btnRed = {
   border: "none",
   borderRadius: "6px",
   marginTop: "10px",
+};
+
+const confirmBtn = {
+  background: "#111827",
+  color: "white",
+  padding: "6px 10px",
+  border: "none",
+  borderRadius: "5px",
+  marginRight: "8px",
+};
+
+const cancelBtn = {
+  background: "#9ca3af",
+  color: "white",
+  padding: "6px 10px",
+  border: "none",
+  borderRadius: "5px",
 };
 
 export default ManageFoundItems;
