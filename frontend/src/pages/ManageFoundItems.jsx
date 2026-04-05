@@ -5,7 +5,7 @@ import hero from "../assets/Lost&Found.png";
 
 const ManageFoundItems = () => {
   const [items, setItems] = useState([]);
-  const [confirmId, setConfirmId] = useState(null); // ✅ NEW
+  const [confirmId, setConfirmId] = useState(null); 
 
   const navigate = useNavigate();
 
@@ -40,7 +40,7 @@ const ManageFoundItems = () => {
         }
       );
 
-      setConfirmId(null); // reset UI
+      setConfirmId(null); 
       fetchFoundItems();
     } catch (error) {
       console.error("Error deleting found item:", error);
@@ -133,7 +133,7 @@ const ManageFoundItems = () => {
                 />
               )}
 
-              {/* ✅ INLINE CONFIRMATION */}
+              {/* INLINE CONFIRMATION */}
               {confirmId === item._id ? (
                 <div style={{ marginTop: "10px" }}>
                   <p>Are you sure you want to delete this item?</p>

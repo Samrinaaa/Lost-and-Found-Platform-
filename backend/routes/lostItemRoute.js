@@ -18,7 +18,7 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// GET ALL LOST ITEMS (🔍 UPDATED WITH SEARCH)
+// GET ALL LOST ITEMS 
 router.get("/", async (req, res) => {
   try {
     const search = req.query.search || "";

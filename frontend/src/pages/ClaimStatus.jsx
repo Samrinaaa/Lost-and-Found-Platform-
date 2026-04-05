@@ -150,7 +150,7 @@ const btnBlue = {
 const statusStyle = (status) => {
   if (status === "approved") return { color: "#10b981", fontWeight: "600" };
   if (status === "rejected") return { color: "#ef4444", fontWeight: "600" };
-  return { color: "#f59e0b", fontWeight: "600" }; // pending
+  return { color: "#f59e0b", fontWeight: "600" }; 
 };
 
 export default ClaimStatus;

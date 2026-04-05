@@ -1,17 +1,34 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-    fullName: {type: String, required: true},
-    email: {type: String, required: true, unique: true},
-    password: {type: String, required: true},
-    phone: {type: String},
-    role: {type: String, enum: ["user", "admin"], default: "user"},
+    fullName: { type: String, required: true },
 
-    // ADDED FOR VERIFICATION
+    email: { type: String, required: true, unique: true },
+
+    password: {
+        type: String,
+        required: function () {
+            return !this.googleId; // password required ONLY for normal users
+        }
+    },
+
+    googleId: {
+        type: String,
+        default: null
+    },
+
+    phone: { type: String },
+
+    role: {
+        type: String,
+        enum: ["user", "admin"],
+        default: "user"
+    },
+
     isVerified: { type: Boolean, default: false },
     otp: { type: String },
     otpExpiry: { type: Date }
 
-}, {timestamps: true});
+}, { timestamps: true });
 
 module.exports = mongoose.model("User", userSchema);

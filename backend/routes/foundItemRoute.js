@@ -22,11 +22,11 @@ router.post("/", auth, async (req, res) => {
 });
 
 
-// GET ALL FOUND ITEMS (🔍 UPDATED WITH SEARCH)
+// GET ALL FOUND ITEMS
 router.get("/", async (req, res) => {
   try {
 
-    const search = req.query.search || ""; // 🔥 ADDED
+    const search = req.query.search || ""; 
 
     const items = await FoundItem.find({
       $or: [
@@ -44,7 +44,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-
 // GET FOUND ITEM BY ID
 router.get("/:id", async (req, res) => {
   try {
@@ -59,7 +58,6 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-
 // DELETE FOUND ITEM
 router.delete("/:id", auth, async (req, res) => {
   try {
@@ -72,12 +70,12 @@ router.delete("/:id", auth, async (req, res) => {
 
     await FoundItem.findByIdAndDelete(req.params.id);
 
-    console.log(`User ${req.user.id} deleted found item: ${item.itemName}`); // 🔥 OPTIONAL LOG
+    console.log(`User ${req.user.id} deleted found item: ${item.itemName}`); 
 
     res.json({ message: "Found item deleted successfully" });
 
   } catch (error) {
-    console.error("Delete found item error:", error); // 🔥 OPTIONAL
+    console.error("Delete found item error:", error); 
     res.status(500).json({ error: error.message });
   }
 });

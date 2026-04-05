@@ -6,14 +6,14 @@ import hero from "../assets/Lost&Found.png";
 const ViewLostItems = () => {
   const [lostItems, setLostItems] = useState([]);
   const [message, setMessage] = useState("");
-  const [search, setSearch] = useState(""); // 🔥 ADDED
+  const [search, setSearch] = useState(""); // 
 
   const navigate = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
   const fetchLostItems = async () => {
     try {
-      const res = await API.get(`/lost?search=${search}`); // 🔥 UPDATED
+      const res = await API.get(`/lost?search=${search}`); 
       setLostItems(res.data);
     } catch (error) {
       setMessage("Failed to load lost items.");
@@ -22,7 +22,7 @@ const ViewLostItems = () => {
 
   useEffect(() => {
     fetchLostItems();
-  }, [search]); // 🔥 UPDATED (re-fetch on search)
+  }, [search]); 
 
   return (
     <div
@@ -62,7 +62,7 @@ const ViewLostItems = () => {
           </p>
         </div>
 
-        {/* 🔥 SEARCH BAR (ADDED) */}
+        {/* SEARCH BAR */}
         <div style={{ marginBottom: "20px" }}>
           <input
             type="text"
@@ -78,7 +78,7 @@ const ViewLostItems = () => {
           />
         </div>
 
-        {/* BACK BUTTON ONLY */}
+        {/* BACK BUTTON */}
         <div
           style={{
             position: "absolute",
@@ -99,7 +99,7 @@ const ViewLostItems = () => {
         {/* CONTENT */}
         {lostItems.length === 0 ? (
           <div style={emptyBox}>
-            <p>No lost items found.</p> {/* slightly adjusted wording */}
+            <p>No lost items found.</p> 
           </div>
         ) : (
           <div style={grid}>

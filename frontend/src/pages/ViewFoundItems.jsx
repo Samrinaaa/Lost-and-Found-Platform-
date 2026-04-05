@@ -6,13 +6,13 @@ import hero from "../assets/Lost&Found.png";
 const ViewFoundItems = () => {
   const [foundItems, setFoundItems] = useState([]);
   const [message, setMessage] = useState("");
-  const [search, setSearch] = useState(""); // 🔥 ADDED
+  const [search, setSearch] = useState(""); 
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
   const fetchFoundItems = async () => {
     try {
-      const res = await API.get(`/found?search=${search}`); // 🔥 UPDATED
+      const res = await API.get(`/found?search=${search}`); 
       setFoundItems(res.data);
     } catch (error) {
       setMessage("Failed to load found items.");
@@ -21,7 +21,7 @@ const ViewFoundItems = () => {
 
   useEffect(() => {
     fetchFoundItems();
-  }, [search]); // 🔥 UPDATED
+  }, [search]); 
 
   return (
     <div
@@ -61,7 +61,7 @@ const ViewFoundItems = () => {
           </p>
         </div>
 
-        {/* 🔥 SEARCH BAR ADDED */}
+        {/* SEARCH BAR */}
         <div style={{ marginBottom: "20px" }}>
           <input
             type="text"
@@ -100,7 +100,7 @@ const ViewFoundItems = () => {
         {/* EMPTY STATE */}
         {foundItems.length === 0 ? (
           <div style={emptyBox}>
-            <p>No found items found.</p> {/* slight improvement */}
+            <p>No found items found.</p> 
           </div>
         ) : (
           <div style={gridStyle}>

@@ -73,7 +73,7 @@ router.put("/:id/approve", auth, async (req, res) => {
   try {
 
     const claim = await Claim.findById(req.params.id)
-      .populate("claimantUser", "fullName email"); // ✅ ADDED
+      .populate("claimantUser", "fullName email");
 
     if (!claim) {
       return res.status(404).json({ message: "Claim not found" });
@@ -83,7 +83,7 @@ router.put("/:id/approve", auth, async (req, res) => {
 
     await claim.save();
 
-    // ✅ SEND EMAIL TO CLAIM USER
+    // SEND EMAIL TO CLAIM USER
     try {
       if (claim.claimantUser && claim.claimantUser.email) {
         await sendEmail(
@@ -109,7 +109,7 @@ router.put("/:id/reject", auth, async (req, res) => {
   try {
 
     const claim = await Claim.findById(req.params.id)
-      .populate("claimantUser", "fullName email"); // ✅ ADDED
+      .populate("claimantUser", "fullName email"); 
 
     if (!claim) {
       return res.status(404).json({ message: "Claim not found" });
@@ -119,7 +119,7 @@ router.put("/:id/reject", auth, async (req, res) => {
 
     await claim.save();
 
-    // ✅ SEND EMAIL TO CLAIM USER
+    // SEND EMAIL TO CLAIM USER
     try {
       if (claim.claimantUser && claim.claimantUser.email) {
         await sendEmail(

@@ -139,7 +139,6 @@ const ManageUsers = () => {
               Back
             </button>
           </Link>
-
         </div>
 
         {/* MESSAGE */}

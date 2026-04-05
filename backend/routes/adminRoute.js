@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 const LostItem = require("../models/LostItem");
-const FoundItem = require("../models/FoundItem"); // ✅ ADDED
+const FoundItem = require("../models/FoundItem"); 
 const auth = require("../middleware/auth");
 
 // middleware to allow only admin
@@ -20,8 +20,7 @@ const adminOnly = async (req, res, next) => {
   }
 };
 
-// ================= USERS MANAGEMENT =================
-
+//USERS MANAGEMENT 
 // GET all users
 router.get("/users", auth, adminOnly, async (req, res) => {
   try {
@@ -87,8 +86,7 @@ router.delete("/users/:id", auth, adminOnly, async (req, res) => {
   }
 });
 
-// ================= LOST ITEMS MANAGEMENT =================
-
+//LOST ITEMS MANAGEMENT
 // GET all lost items
 router.get("/lost-items", auth, adminOnly, async (req, res) => {
   try {
@@ -128,8 +126,7 @@ router.delete("/lost-items/:id", auth, adminOnly, async (req, res) => {
 });
 
 
-// ================= FOUND ITEMS MANAGEMENT =================
-// ✅ THIS IS WHAT WAS MISSING
+//FOUND ITEMS MANAGEMENT 
 
 router.delete("/found-items/:id", auth, adminOnly, async (req, res) => {
   try {

@@ -32,7 +32,6 @@ function Register() {
       setSuccess(res.data.message);
       setError("");
 
-      // 🔥 UPDATED: redirect to OTP page (instead of login)
       setTimeout(() => {
         navigate("/verify-otp", { state: { userId: res.data.userId } });
       }, 1000);

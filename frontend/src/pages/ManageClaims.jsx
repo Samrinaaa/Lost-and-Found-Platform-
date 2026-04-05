@@ -134,7 +134,6 @@ const ManageClaims = () => {
             <button style={btnBlue}>Back</button>
           </Link>
 
-          {/* ❌ Logout button REMOVED ONLY */}
         </div>
 
         {/* CLAIM CARDS */}
