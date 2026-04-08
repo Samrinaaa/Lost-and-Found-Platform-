@@ -9,9 +9,10 @@ const ReportLost = () => {
     description: "",
     locationLost: "",
     dateLost: "",
-    imageUrl: ""
+    category: ""
   });
 
+  const [image, setImage] = useState(null);
   const [message, setMessage] = useState("");
 
   const navigate = useNavigate();
@@ -28,7 +29,22 @@ const ReportLost = () => {
     e.preventDefault();
 
     try {
-      await API.post("/lost", formData);
+      const data = new FormData();
+
+      Object.keys(formData).forEach((key) => {
+        data.append(key, formData[key]);
+      });
+
+      if (image) {
+        data.append("image", image);
+      }
+
+      await API.post("/lost", data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
       setMessage("Lost item reported successfully!");
 
       setFormData({
@@ -36,8 +52,10 @@ const ReportLost = () => {
         description: "",
         locationLost: "",
         dateLost: "",
-        imageUrl: ""
+        category: ""
       });
+
+      setImage(null);
 
     } catch (error) {
       setMessage("Failed to report lost item");
@@ -54,7 +72,6 @@ const ReportLost = () => {
         position: "relative",
       }}
     >
-      {/* Overlay */}
       <div
         style={{
           position: "absolute",
@@ -73,7 +90,6 @@ const ReportLost = () => {
           color: "white",
         }}
       >
-        {/* HEADER */}
         <div style={{ marginBottom: "30px" }}>
           <h2 style={{ opacity: 0.8 }}>User Dashboard</h2>
           <h1 style={{ fontSize: "36px" }}>Report Lost Item</h1>
@@ -82,7 +98,6 @@ const ReportLost = () => {
           </p>
         </div>
 
-        {/* TOP BUTTON (ONLY BACK NOW) */}
         <div
           style={{
             position: "absolute",
@@ -95,9 +110,24 @@ const ReportLost = () => {
           </Link>
         </div>
 
-        {/* FORM */}
         <div style={formBox}>
           <form onSubmit={handleSubmit}>
+
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              required
+              style={inputStyle}
+            >
+              <option value="">Select Category</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Bags">Bags</option>
+              <option value="Documents">Documents</option>
+              <option value="Clothing">Clothing</option>
+              <option value="Others">Others</option>
+            </select>
+
             <input
               type="text"
               name="itemName"
@@ -134,11 +164,9 @@ const ReportLost = () => {
             />
 
             <input
-              type="text"
-              name="imageUrl"
-              placeholder="Image URL"
-              value={formData.imageUrl}
-              onChange={handleChange}
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImage(e.target.files[0])}
               style={inputStyle}
             />
 
@@ -164,8 +192,6 @@ const ReportLost = () => {
     </div>
   );
 };
-
-/* STYLES */
 
 const formBox = {
   maxWidth: "500px",

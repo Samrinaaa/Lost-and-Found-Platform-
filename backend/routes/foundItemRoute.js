@@ -2,14 +2,27 @@ const express = require("express");
 const router = express.Router();
 const FoundItem = require("../models/FoundItem");
 const auth = require("../middleware/auth");
+const multer = require("multer");
 
+// Multer setup
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+
+const upload = multer({ storage });
 
 // ADD FOUND ITEM
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, upload.single("image"), async (req, res) => {
   try {
     const item = new FoundItem({
       ...req.body,
       userId: req.user.id,
+      imageUrl: req.file ? `/uploads/${req.file.filename}` : "",
     });
 
     await item.save();
@@ -20,7 +33,6 @@ router.post("/", auth, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 
 // GET ALL FOUND ITEMS
 router.get("/", async (req, res) => {
@@ -79,6 +91,5 @@ router.delete("/:id", auth, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 
 module.exports = router;

@@ -30,7 +30,13 @@ const Login = () => {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      navigate("/dashboard");
+      const user = res.data.user;
+
+      if (user.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
 
     } catch (error) {
       setMessage(error.response?.data?.message || "Invalid credentials");
@@ -46,7 +52,13 @@ const Login = () => {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      navigate("/dashboard");
+      const user = res.data.user;
+
+      if (user.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
 
     } catch (error) {
       console.log("GOOGLE ERROR:", error);
@@ -57,13 +69,9 @@ const Login = () => {
   return (
     <div style={containerStyle}>
 
-      {/* BLURRED BACKGROUND */}
       <div style={backgroundStyle} />
-
-      {/* OVERLAY */}
       <div style={overlayStyle} />
 
-      {/* CARD */}
       <div style={cardStyle}>
         <h2 style={titleStyle}>Welcome Back </h2>
         <p style={subtitleStyle}>Login to continue</p>
@@ -118,7 +126,6 @@ const Login = () => {
 
 
 // STYLES
-// container
 const containerStyle = {
   height: "100vh",
   display: "flex",
@@ -128,7 +135,6 @@ const containerStyle = {
   overflow: "hidden"
 };
 
-// blurred background
 const backgroundStyle = {
   position: "absolute",
   width: "100%",
@@ -140,7 +146,6 @@ const backgroundStyle = {
   transform: "scale(1.1)"
 };
 
-// overlay
 const overlayStyle = {
   position: "absolute",
   width: "100%",
@@ -159,7 +164,6 @@ const cardStyle = {
   transition: "transform 0.2s ease",
 };
 
-// title
 const titleStyle = {
   marginBottom: "6px",
   fontWeight: "600",
@@ -172,7 +176,6 @@ const subtitleStyle = {
   color: "#666"
 };
 
-// labels
 const labelStyle = {
   display: "block",
   textAlign: "left",

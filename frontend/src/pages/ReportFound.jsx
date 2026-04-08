@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import API from "../services/api";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import hero from "../assets/Lost&Found.png";
 
 const ReportFound = () => {
@@ -9,12 +9,12 @@ const ReportFound = () => {
     description: "",
     locationFound: "",
     dateFound: "",
-    imageUrl: ""
+    category: ""
   });
 
+  const [image, setImage] = useState(null);
   const [message, setMessage] = useState("");
 
-  const navigate = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
   const handleChange = (e) => {
@@ -28,7 +28,22 @@ const ReportFound = () => {
     e.preventDefault();
 
     try {
-      await API.post("/found", formData);
+      const data = new FormData();
+
+      Object.keys(formData).forEach((key) => {
+        data.append(key, formData[key]);
+      });
+
+      if (image) {
+        data.append("image", image);
+      }
+
+      await API.post("/found", data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
       setMessage("Found item reported successfully!");
 
       setFormData({
@@ -36,8 +51,10 @@ const ReportFound = () => {
         description: "",
         locationFound: "",
         dateFound: "",
-        imageUrl: ""
+        category: ""
       });
+
+      setImage(null);
 
     } catch (error) {
       setMessage("Failed to report found item");
@@ -54,7 +71,6 @@ const ReportFound = () => {
         position: "relative",
       }}
     >
-      {/* Overlay */}
       <div
         style={{
           position: "absolute",
@@ -73,16 +89,14 @@ const ReportFound = () => {
           color: "white",
         }}
       >
-        {/* HEADER */}
         <div style={{ marginBottom: "30px" }}>
-          <h2 style={{ opacity: 0.8 }}>User Dashboard</h2>
-          <h1 style={{ fontSize: "36px" }}>Report Found Item</h1>
+          <h2>User Dashboard</h2>
+          <h1>Report Found Item</h1>
           <p>
             Welcome, <strong>{currentUser?.fullName}</strong>
           </p>
         </div>
 
-        {/* BACK BUTTON */}
         <div
           style={{
             position: "absolute",
@@ -95,9 +109,24 @@ const ReportFound = () => {
           </Link>
         </div>
 
-        {/* FORM */}
         <div style={formBox}>
           <form onSubmit={handleSubmit}>
+
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              required
+              style={inputStyle}
+            >
+              <option value="">Select Category</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Bags">Bags</option>
+              <option value="Documents">Documents</option>
+              <option value="Clothing">Clothing</option>
+              <option value="Others">Others</option>
+            </select>
+
             <input
               type="text"
               name="itemName"
@@ -134,11 +163,9 @@ const ReportFound = () => {
             />
 
             <input
-              type="text"
-              name="imageUrl"
-              placeholder="Image URL"
-              value={formData.imageUrl}
-              onChange={handleChange}
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImage(e.target.files[0])}
               style={inputStyle}
             />
 
@@ -164,8 +191,6 @@ const ReportFound = () => {
     </div>
   );
 };
-
-/* STYLES */
 
 const formBox = {
   maxWidth: "500px",

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import hero from "../assets/Lost&Found.png";
+import hero from "../assets/image.png";
 
 function Register() {
   const navigate = useNavigate();
@@ -44,19 +44,59 @@ function Register() {
 
   return (
     <div style={containerStyle}>
+
+      {/* BACKGROUND */}
+      <div style={backgroundStyle} />
+
+      {/* OVERLAY */}
       <div style={overlayStyle} />
 
+      {/* CARD */}
       <div style={cardStyle}>
-        <h2 style={titleStyle}>Register</h2>
+        <h2 style={titleStyle}>Create Account</h2>
+        <p style={subtitleStyle}>Register to continue</p>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        {success && <p style={{ color: "green" }}>{success}</p>}
+        {error && <p style={errorStyle}>{error}</p>}
+        {success && <p style={successStyle}>{success}</p>}
 
         <form onSubmit={handleSubmit}>
-          <input name="fullName" placeholder="Full Name" onChange={handleChange} style={inputStyle} required />
-          <input name="email" placeholder="Email" onChange={handleChange} style={inputStyle} required />
-          <input name="password" placeholder="Password" type="password" onChange={handleChange} style={inputStyle} required />
-          <input name="phone" placeholder="Phone" onChange={handleChange} style={inputStyle} required />
+
+          <label style={labelStyle}>Full Name</label>
+          <input
+            name="fullName"
+            placeholder="Enter your full name"
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          />
+
+          <label style={labelStyle}>Email</label>
+          <input
+            name="email"
+            placeholder="Enter your email"
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          />
+
+          <label style={labelStyle}>Password</label>
+          <input
+            type="password"
+            name="password"
+            placeholder="Enter your password"
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          />
+
+          <label style={labelStyle}>Phone</label>
+          <input
+            name="phone"
+            placeholder="Enter your phone number"
+            onChange={handleChange}
+            style={inputStyle}
+            required
+          />
 
           <button style={buttonStyle}>Register</button>
         </form>
@@ -72,66 +112,108 @@ function Register() {
   );
 }
 
+
+// ===== SAME STYLE AS LOGIN =====
+
 const containerStyle = {
   height: "100vh",
-  backgroundImage: "url('/src/assets/Lost&Found.png')",
-  backgroundSize: "cover",
-  backgroundPosition: "center",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  position: "relative"
+  position: "relative",
+  overflow: "hidden"
+};
+
+const backgroundStyle = {
+  position: "absolute",
+  width: "100%",
+  height: "100%",
+  backgroundImage: `url(${hero})`,
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  filter: "blur(8px)",
+  transform: "scale(1.1)"
 };
 
 const overlayStyle = {
   position: "absolute",
   width: "100%",
   height: "100%",
-  background: "rgba(0,0,0,0.65)"
+  background: "rgba(0,0,0,0.4)"
 };
 
 const cardStyle = {
   position: "relative",
-  width: "420px",
+  width: "440px",
   background: "#ffffff",
-  padding: "35px",
-  borderRadius: "12px",
-  boxShadow: "0 8px 25px rgba(0,0,0,0.3)",
+  padding: "38px",
+  borderRadius: "16px",
+  boxShadow: "0 20px 50px rgba(0,0,0,0.25)",
   textAlign: "center"
 };
 
 const titleStyle = {
+  marginBottom: "6px",
+  fontWeight: "600",
+  fontSize: "22px"
+};
+
+const subtitleStyle = {
   marginBottom: "20px",
-  fontWeight: "600"
+  fontSize: "13px",
+  color: "#666"
+};
+
+const labelStyle = {
+  display: "block",
+  textAlign: "left",
+  marginBottom: "5px",
+  fontSize: "13px"
 };
 
 const inputStyle = {
   width: "100%",
   padding: "12px",
   marginBottom: "14px",
-  borderRadius: "6px",
-  border: "1px solid #ccc"
+  borderRadius: "10px",
+  border: "1px solid #d1d5db",
+  background: "#f9fafb",
+  fontSize: "14px"
 };
 
 const buttonStyle = {
   width: "100%",
   padding: "12px",
-  background: "#3b82f6",
+  background: "linear-gradient(135deg, #3b82f6, #2563eb)",
   color: "white",
   border: "none",
-  borderRadius: "8px",
+  borderRadius: "10px",
   fontWeight: "600",
-  cursor: "pointer"
+  cursor: "pointer",
+  marginTop: "10px"
 };
 
 const footerText = {
-  marginTop: "15px",
+  marginTop: "16px",
   fontSize: "14px"
 };
 
 const linkStyle = {
-  color: "#3b82f6",
-  textDecoration: "none"
+  color: "#2563eb",
+  textDecoration: "none",
+  fontWeight: "500"
+};
+
+const errorStyle = {
+  color: "red",
+  marginBottom: "10px",
+  fontSize: "14px"
+};
+
+const successStyle = {
+  color: "green",
+  marginBottom: "10px",
+  fontSize: "14px"
 };
 
 export default Register;

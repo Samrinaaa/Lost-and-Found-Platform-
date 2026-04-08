@@ -6,6 +6,13 @@ const foundItemSchema = new mongoose.Schema({
   description: { type: String },
   locationFound: { type: String },
   dateFound: { type: Date },
+
+  category: {
+    type: String,
+    enum: ["Electronics", "Bags", "Documents", "Clothing", "Others"],
+    required: true
+  },
+
   imageUrl: { type: String },
   status: { type: String, enum: ["open", "claimed", "closed"], default: "open" }
 }, { timestamps: true });

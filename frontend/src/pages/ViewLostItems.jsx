@@ -6,7 +6,7 @@ import hero from "../assets/Lost&Found.png";
 const ViewLostItems = () => {
   const [lostItems, setLostItems] = useState([]);
   const [message, setMessage] = useState("");
-  const [search, setSearch] = useState(""); // 
+  const [search, setSearch] = useState(""); 
 
   const navigate = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem("user"));
@@ -118,9 +118,14 @@ const ViewLostItems = () => {
 
                 <p><strong>Status:</strong> {item.status}</p>
 
+                {/* IMAGE DISPLAY */}
                 {item.imageUrl && (
                   <img
-                    src={item.imageUrl}
+                    src={
+                      item.imageUrl.startsWith("http")
+                        ? item.imageUrl
+                        : `http://localhost:5001${item.imageUrl}`
+                    }
                     alt={item.itemName}
                     style={imageStyle}
                   />

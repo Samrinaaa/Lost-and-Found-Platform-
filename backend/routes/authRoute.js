@@ -7,7 +7,7 @@ const { OAuth2Client } = require("google-auth-library");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// OTP GENERATOR 
+// OTP GENERATOR
 const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
@@ -18,6 +18,12 @@ router.post("/register", async (req, res) => {
     console.log("Register request received");
 
     const { fullName, email, password, phone } = req.body;
+
+    console.log("Registration Data:");
+    console.log("fullName:", fullName);
+    console.log("email:", email);
+    console.log("password:", password);
+    console.log("phone:", phone);
 
     if (!fullName || !email || !password || !phone) {
       console.log("Missing fields in registration");
@@ -41,18 +47,21 @@ router.post("/register", async (req, res) => {
       password: hashedPassword,
       phone,
       otp,
-      otpExpiry: Date.now() + 10 * 60 * 1000
+      otpExpiry: Date.now() + 10 * 60 * 1000,
+      isVerified: false
     });
 
     await newUser.save();
 
-    console.log("User registered successfully:", email);
+    console.log("User created. OTP sent for verification:", email);
 
     await sendEmail(
       email,
       "Verify your account",
       `<h3>Your OTP is: ${otp}</h3><p>Valid for 10 minutes</p>`
     );
+
+    console.log("Email sent successfully");
 
     return res.status(201).json({
       message: "OTP sent. Verify your account.",
@@ -65,12 +74,14 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// VERIFY OTP
+// VERIFY OTP 
 router.post("/verify-otp", async (req, res) => {
   try {
     console.log("OTP verification request received");
 
     const { userId, otp } = req.body;
+
+    console.log("OTP Entered:", otp);
 
     const user = await User.findById(userId);
     if (!user) {
@@ -96,7 +107,9 @@ router.post("/verify-otp", async (req, res) => {
 
     console.log("User verified successfully:", user.email);
 
-    return res.status(200).json({ message: "Account verified successfully" });
+    return res.status(200).json({
+      message: "Account verified successfully"
+    });
 
   } catch (error) {
     console.error("OTP error:", error);
@@ -104,15 +117,19 @@ router.post("/verify-otp", async (req, res) => {
   }
 });
 
-// NORMAL LOGIN 
+// LOGIN
 router.post("/login", async (req, res) => {
   try {
     console.log("Login request received");
 
     const { email, password } = req.body;
 
+    // LOGIN INPUT LOG
+    console.log("Login Data:");
+    console.log("email:", email);
+    console.log("password:", password);
+
     if (!email || !password) {
-      console.log("Missing login fields");
       return res.status(400).json({ message: "Email and password required." });
     }
 
@@ -144,7 +161,13 @@ router.post("/login", async (req, res) => {
     return res.status(200).json({
       message: "Login successful",
       token,
-      user
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role
+      }
     });
 
   } catch (error) {
@@ -160,12 +183,12 @@ router.post("/google", async (req, res) => {
 
     const { credential } = req.body;
 
+    console.log("Google credential received");
+
     if (!credential) {
-      console.log("No credential received");
       return res.status(400).json({ message: "Google login failed" });
     }
 
-    // Verify Google token
     const ticket = await client.verifyIdToken({
       idToken: credential,
       audience: process.env.GOOGLE_CLIENT_ID
@@ -181,8 +204,6 @@ router.post("/google", async (req, res) => {
     let user = await User.findOne({ email });
 
     if (!user) {
-      console.log("Creating new Google user");
-
       user = new User({
         fullName,
         email,
@@ -192,8 +213,6 @@ router.post("/google", async (req, res) => {
       });
 
       await user.save();
-    } else {
-      console.log("Existing Google user logging in");
     }
 
     const token = jwt.sign(
@@ -207,7 +226,13 @@ router.post("/google", async (req, res) => {
     return res.status(200).json({
       message: "Google login successful",
       token,
-      user
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role || "user"
+      }
     });
 
   } catch (error) {

@@ -129,9 +129,14 @@ const ViewFoundItems = () => {
                   <strong>Status:</strong> {item.status}
                 </p>
 
+                {/* IMAGE DISPLAY */}
                 {item.imageUrl && (
                   <img
-                    src={item.imageUrl}
+                    src={
+                      item.imageUrl.startsWith("http")
+                        ? item.imageUrl
+                        : `http://localhost:5001${item.imageUrl}`
+                    }
                     alt={item.itemName}
                     style={imageStyle}
                   />
