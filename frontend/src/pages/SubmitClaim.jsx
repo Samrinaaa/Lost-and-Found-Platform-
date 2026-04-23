@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import hero from "../assets/Lost&Found.png";
 
 const SubmitClaim = () => {
@@ -8,12 +8,13 @@ const SubmitClaim = () => {
   const [foundItems, setFoundItems] = useState([]);
   const [formData, setFormData] = useState({
     lostId: "",
-    foundId: ""
+    foundId: "",
+    description: ""
   });
 
+  const [proofFiles, setProofFiles] = useState([]);
   const [message, setMessage] = useState("");
 
-  const navigate = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
@@ -33,27 +34,77 @@ const SubmitClaim = () => {
   }, []);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    // allow only one selection at a time
+    if (name === "lostId") {
+      setFormData({
+        ...formData,
+        lostId: value,
+        foundId: value ? "" : formData.foundId
+      });
+      return;
+    }
+
+    if (name === "foundId") {
+      setFormData({
+        ...formData,
+        foundId: value,
+        lostId: value ? "" : formData.lostId
+      });
+      return;
+    }
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+  };
+
+  const handleFileChange = (e) => {
+    setProofFiles(Array.from(e.target.files || []));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage("");
+
+    if (!formData.lostId && !formData.foundId) {
+      setMessage("Please select either a lost item or a found item.");
+      return;
+    }
 
     try {
-      await API.post("/claim", formData);
+      const submitData = new FormData();
+      submitData.append("lostId", formData.lostId);
+      submitData.append("foundId", formData.foundId);
+      submitData.append("description", formData.description);
+
+      proofFiles.forEach((file) => {
+        submitData.append("proofImages", file);
+      });
+
+      await API.post("/claim", submitData, {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      });
 
       setMessage("Claim submitted successfully!");
 
       setFormData({
         lostId: "",
-        foundId: ""
+        foundId: "",
+        description: ""
       });
 
+      setProofFiles([]);
     } catch (error) {
-      setMessage("Failed to submit claim.");
+      setMessage(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Failed to submit claim."
+      );
     }
   };
 
@@ -67,7 +118,6 @@ const SubmitClaim = () => {
         position: "relative",
       }}
     >
-      {/* Overlay */}
       <div
         style={{
           position: "absolute",
@@ -86,7 +136,6 @@ const SubmitClaim = () => {
           color: "white",
         }}
       >
-        {/* HEADER */}
         <div style={{ marginBottom: "30px" }}>
           <h2 style={{ opacity: 0.8 }}>User Dashboard</h2>
           <h1 style={{ fontSize: "36px" }}>Submit Claim</h1>
@@ -95,7 +144,6 @@ const SubmitClaim = () => {
           </p>
         </div>
 
-        {/* BACK BUTTON */}
         <div
           style={{
             position: "absolute",
@@ -108,10 +156,8 @@ const SubmitClaim = () => {
           </Link>
         </div>
 
-        {/* FORM */}
         <div style={formBox}>
           <form onSubmit={handleSubmit}>
-
             <select
               name="lostId"
               value={formData.lostId}
@@ -140,10 +186,35 @@ const SubmitClaim = () => {
               ))}
             </select>
 
-            <button style={submitBtn}>
+            <textarea
+              name="description"
+              placeholder="Describe why this item is yours (color, unique marks, contents, etc.)"
+              value={formData.description}
+              onChange={handleChange}
+              style={{ ...inputStyle, height: "100px" }}
+            />
+
+            <div style={fileBox}>
+              <label style={labelStyle}>Upload Proof Images/Documents (optional)</label>
+              <input
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                style={fileInputStyle}
+              />
+
+              {proofFiles.length > 0 && (
+                <ul style={fileListStyle}>
+                  {proofFiles.map((file, index) => (
+                    <li key={index}>{file.name}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <button type="submit" style={submitBtn}>
               Submit Claim
             </button>
-
           </form>
 
           {message && (
@@ -151,7 +222,7 @@ const SubmitClaim = () => {
               style={{
                 marginTop: "15px",
                 textAlign: "center",
-                color: message.includes("Failed") ? "#f87171" : "#10b981",
+                color: message.toLowerCase().includes("success") ? "#10b981" : "#f87171",
                 fontWeight: "600"
               }}
             >
@@ -163,8 +234,6 @@ const SubmitClaim = () => {
     </div>
   );
 };
-
-/* STYLES */
 
 const formBox = {
   maxWidth: "500px",
@@ -181,6 +250,30 @@ const inputStyle = {
   borderRadius: "6px",
   border: "1px solid #ccc",
   fontSize: "15px"
+};
+
+const fileBox = {
+  marginBottom: "15px"
+};
+
+const labelStyle = {
+  display: "block",
+  marginBottom: "8px",
+  fontWeight: "600"
+};
+
+const fileInputStyle = {
+  width: "100%",
+  padding: "10px",
+  border: "1px solid #ccc",
+  borderRadius: "6px",
+  background: "#fff"
+};
+
+const fileListStyle = {
+  marginTop: "10px",
+  paddingLeft: "18px",
+  color: "#374151"
 };
 
 const submitBtn = {
