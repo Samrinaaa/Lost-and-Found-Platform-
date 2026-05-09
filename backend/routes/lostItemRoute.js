@@ -2,27 +2,15 @@ const express = require("express");
 const router = express.Router();
 const LostItem = require("../models/LostItem");
 const auth = require("../middleware/auth");
-const multer = require("multer");
-
-// Multer setup
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
-});
-
-const upload = multer({ storage });
+const { uploadItem } = require("../config/cloudinary");
 
 // ADD LOST ITEM
-router.post("/", auth, upload.single("image"), async (req, res) => {
+router.post("/", auth, uploadItem.single("image"), async (req, res) => {
   try {
     const item = new LostItem({
       ...req.body,
       userId: req.user.id,
-      imageUrl: req.file ? `/uploads/${req.file.filename}` : "",
+      imageUrl: req.file ? req.file.path : "",
     });
 
     await item.save();

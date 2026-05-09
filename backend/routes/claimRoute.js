@@ -5,19 +5,7 @@ const auth = require("../middleware/auth");
 const sendEmail = require("../utils/sendEmail");
 const LostItem = require("../models/LostItem");
 const FoundItem = require("../models/FoundItem");
-const multer = require("multer");
-
-// Multer setup for proof uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
-});
-
-const upload = multer({ storage });
+const { uploadProof } = require("../config/cloudinary");
 
 // helper middleware: admin only
 const adminOnly = async (req, res, next) => {
@@ -25,7 +13,6 @@ const adminOnly = async (req, res, next) => {
     if (!req.user || req.user.role !== "admin") {
       return res.status(403).json({ message: "Access denied. Admin only." });
     }
-
     next();
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -33,7 +20,7 @@ const adminOnly = async (req, res, next) => {
 };
 
 // CREATE CLAIM
-router.post("/", auth, upload.array("proofImages", 5), async (req, res) => {
+router.post("/", auth, uploadProof.array("proofImages", 5), async (req, res) => {
   try {
     const { lostId, foundId, description } = req.body;
 
@@ -43,8 +30,9 @@ router.post("/", auth, upload.array("proofImages", 5), async (req, res) => {
       });
     }
 
+    // Cloudinary returns full URLs in req.files[n].path
     const uploadedProofs = req.files
-      ? req.files.map((file) => `/uploads/${file.filename}`)
+      ? req.files.map((file) => file.path)
       : [];
 
     const claim = new Claim({
@@ -96,8 +84,7 @@ router.post("/", auth, upload.array("proofImages", 5), async (req, res) => {
 });
 
 // GET CLAIMS
-// admin -> all claims
-// user -> only their own claims
+// admin -> all claims | user -> only their own claims
 router.get("/", auth, async (req, res) => {
   try {
     let claims;
@@ -115,7 +102,6 @@ router.get("/", auth, async (req, res) => {
     }
 
     res.json(claims);
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -131,15 +117,10 @@ router.put("/:id/review", auth, adminOnly, async (req, res) => {
     }
 
     claim.status = "under_review";
-
-    claim.logs.push({
-      message: "Admin started reviewing the claim"
-    });
-
+    claim.logs.push({ message: "Admin started reviewing the claim" });
     await claim.save();
 
     res.json({ message: "Claim moved to under review" });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -159,11 +140,7 @@ router.put("/:id/request-info", auth, adminOnly, async (req, res) => {
 
     claim.status = "need_more_info";
     claim.adminMessage = message || "";
-
-    claim.logs.push({
-      message: `Admin requested more info: ${message || ""}`
-    });
-
+    claim.logs.push({ message: `Admin requested more info: ${message || ""}` });
     await claim.save();
 
     // SEND EMAIL TO USER
@@ -180,14 +157,13 @@ router.put("/:id/request-info", auth, adminOnly, async (req, res) => {
     }
 
     res.json({ message: "Requested more information from user" });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // USER: RESPOND TO ADMIN (FOLLOW-UP)
-router.put("/:id/respond", auth, upload.array("proofImages", 5), async (req, res) => {
+router.put("/:id/respond", auth, uploadProof.array("proofImages", 5), async (req, res) => {
   try {
     const { response } = req.body;
 
@@ -201,8 +177,9 @@ router.put("/:id/respond", auth, upload.array("proofImages", 5), async (req, res
       return res.status(403).json({ message: "Access denied. This is not your claim." });
     }
 
+    // Cloudinary returns full URLs in req.files[n].path
     const uploadedProofs = req.files
-      ? req.files.map((file) => `/uploads/${file.filename}`)
+      ? req.files.map((file) => file.path)
       : [];
 
     claim.userResponse = response || "";
@@ -220,11 +197,7 @@ router.put("/:id/respond", auth, upload.array("proofImages", 5), async (req, res
 
     await claim.save();
 
-    res.json({
-      message: "Response submitted successfully",
-      claim
-    });
-
+    res.json({ message: "Response submitted successfully", claim });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -241,24 +214,16 @@ router.put("/:id/approve", auth, adminOnly, async (req, res) => {
     }
 
     claim.status = "approved";
-
-    claim.logs.push({
-      message: "Claim approved by admin"
-    });
-
+    claim.logs.push({ message: "Claim approved by admin" });
     await claim.save();
 
     // UPDATE RELATED ITEM STATUS
     if (claim.lostId) {
-      await LostItem.findByIdAndUpdate(claim.lostId, {
-        status: "found"
-      });
+      await LostItem.findByIdAndUpdate(claim.lostId, { status: "found" });
     }
 
     if (claim.foundId) {
-      await FoundItem.findByIdAndUpdate(claim.foundId, {
-        status: "claimed"
-      });
+      await FoundItem.findByIdAndUpdate(claim.foundId, { status: "claimed" });
     }
 
     // SEND EMAIL TO CLAIM USER
@@ -275,7 +240,6 @@ router.put("/:id/approve", auth, adminOnly, async (req, res) => {
     }
 
     res.json({ message: "Claim approved successfully" });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -292,11 +256,7 @@ router.put("/:id/reject", auth, adminOnly, async (req, res) => {
     }
 
     claim.status = "rejected";
-
-    claim.logs.push({
-      message: "Claim rejected by admin"
-    });
-
+    claim.logs.push({ message: "Claim rejected by admin" });
     await claim.save();
 
     // SEND EMAIL TO CLAIM USER
@@ -313,7 +273,6 @@ router.put("/:id/reject", auth, adminOnly, async (req, res) => {
     }
 
     res.json({ message: "Claim rejected successfully" });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -1,6 +1,5 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import hero from "../assets/Lost&Found.png";
 
 const Dashboard = () => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -13,64 +12,65 @@ const Dashboard = () => {
   };
 
   return (
-    <div style={containerStyle}>
+    <div style={styles.container}>
 
-      {/* Background */}
-      <div style={bgStyle}></div>
+      {/* Background orbs — same as login */}
+      <div style={{ ...styles.orb, ...styles.orb1 }} />
+      <div style={{ ...styles.orb, ...styles.orb2 }} />
+      <div style={{ ...styles.orb, ...styles.orb3 }} />
 
-      {/* Overlay */}
-      <div style={overlayStyle}></div>
-
-      {/* Content */}
-      <div style={contentWrapper}>
+      <div style={styles.content}>
 
         {/* Header */}
-        <div style={header}>
-          <h1 style={title}>User Dashboard</h1>
-
-          <button onClick={handleLogout} style={logoutButton}>
+        <div style={styles.header}>
+          <span style={styles.brandName}>Lost and Found</span>
+          <button
+            onClick={handleLogout}
+            style={styles.logoutButton}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(220,38,38,0.08)"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >
             Logout
           </button>
         </div>
 
         {/* Welcome */}
-        <div style={welcome}>
-          <h2 style={welcomeTitle}>
-            Welcome, {user?.fullName}
-          </h2>
-
-          <p style={welcomeText}>
+        <div style={styles.welcome}>
+          <h1 style={styles.welcomeTitle}>
+            Welcome back, {user?.fullName} 
+          </h1>
+          <p style={styles.welcomeText}>
             Manage your lost, found items and claims.
           </p>
         </div>
 
         {/* Cards */}
-        <div style={grid}>
+        <div style={styles.grid}>
 
-          {/* LOST */}
           <DashboardCard
+            icon="🔍"
             title="Lost Item Management"
-            desc="Report or browse lost items."
+            desc="Report or browse lost items in the system."
             primaryLink="/report-lost"
             secondaryLink="/lost-items"
             primaryText="Report Lost"
             secondaryText="View Lost"
           />
 
-          {/* FOUND */}
           <DashboardCard
+            icon="📦"
             title="Found Item Management"
-            desc="Report or browse found items."
+            desc="Report or browse found items in the system."
             primaryLink="/report-found"
             secondaryLink="/found-items"
             primaryText="Report Found"
             secondaryText="View Found"
           />
 
-          {/* CLAIM */}
           <DashboardCard
+            icon="📋"
             title="Claim Management"
-            desc="Submit and track your claims."
+            desc="Submit and track the status of your claims."
             primaryLink="/claim"
             secondaryLink="/claim-status"
             primaryText="Submit Claim"
@@ -84,150 +84,196 @@ const Dashboard = () => {
   );
 };
 
-/* CARD COMPONENT */
-const DashboardCard = ({
-  title,
-  desc,
-  primaryLink,
-  secondaryLink,
-  primaryText,
-  secondaryText
-}) => (
-  <div style={card}>
-    <h3 style={cardTitle}>{title}</h3>
-    <p style={cardText}>{desc}</p>
+/* ─── Card Component ────────────────────────── */
 
-    <div style={buttonRow}>
+const DashboardCard = ({ icon, title, desc, primaryLink, secondaryLink, primaryText, secondaryText }) => (
+  <div
+    style={styles.card}
+    onMouseEnter={e => {
+      e.currentTarget.style.boxShadow = "0 20px 50px rgba(45,106,100,0.15), 0 8px 24px rgba(0,0,0,0.06)";
+      e.currentTarget.style.transform = "translateY(-4px)";
+    }}
+    onMouseLeave={e => {
+      e.currentTarget.style.boxShadow = "0 8px 32px rgba(45,106,100,0.08), 0 2px 8px rgba(0,0,0,0.04)";
+      e.currentTarget.style.transform = "translateY(0)";
+    }}
+  >
+    <div style={styles.cardIcon}>{icon}</div>
+    <h3 style={styles.cardTitle}>{title}</h3>
+    <p style={styles.cardText}>{desc}</p>
+
+    <div style={styles.buttonRow}>
       <Link to={primaryLink}>
-        <button style={primaryButton}>{primaryText}</button>
+        <button
+          style={styles.primaryButton}
+          onMouseEnter={e => {
+            e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow = "0 8px 20px rgba(45,106,100,0.35)";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 4px 14px rgba(45,106,100,0.2)";
+          }}
+        >
+          {primaryText}
+        </button>
       </Link>
 
       <Link to={secondaryLink}>
-        <button style={secondaryButton}>{secondaryText}</button>
+        <button
+          style={styles.secondaryButton}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(45,106,100,0.1)"}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+        >
+          {secondaryText}
+        </button>
       </Link>
     </div>
   </div>
 );
 
-/* STYLES */
+/* ─── Styles ────────────────────────────────── */
 
-const containerStyle = {
-  position: "relative",
-  minHeight: "100vh",
-  overflow: "hidden"
-};
+const styles = {
+  container: {
+    minHeight: "100vh",
+    background: "#faf9f7",
+    fontFamily: "'Inter', 'Segoe UI', sans-serif",
+    position: "relative",
+    overflow: "hidden",
+    padding: "40px 20px",
+  },
 
-const bgStyle = {
-  position: "absolute",
-  width: "100%",
-  height: "100%",
-  backgroundImage: `url(${hero})`,
-  backgroundSize: "cover",
-  backgroundPosition: "center",
-  zIndex: 0
-};
+  orb: {
+    position: "absolute",
+    borderRadius: "50%",
+    filter: "blur(80px)",
+    opacity: 0.5,
+    pointerEvents: "none",
+  },
+  orb1: { width: 400, height: 400, background: "linear-gradient(135deg, #d4e8e6, #c5dbd9)", top: -100, right: -100 },
+  orb2: { width: 300, height: 300, background: "linear-gradient(135deg, #e8ead4, #dce0c8)", bottom: -80, left: -60 },
+  orb3: { width: 200, height: 200, background: "linear-gradient(135deg, #d4e5e3, #c8dbd8)", top: "40%", left: -80 },
 
-const overlayStyle = {
-  position: "absolute",
-  width: "100%",
-  height: "100%",
-  background: "rgba(0,0,0,0.65)",
-  zIndex: 1
-};
+  content: {
+    position: "relative",
+    zIndex: 10,
+    maxWidth: "1000px",
+    margin: "0 auto",
+  },
 
-const contentWrapper = {
-  position: "relative",
-  zIndex: 2,
-  maxWidth: "1100px",
-  margin: "0 auto",
-  padding: "40px",
-  color: "white"
-};
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "40px",
+  },
 
-const header = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: "30px"
-};
+  brandName: {
+    fontFamily: "'Playfair Display', Georgia, serif",
+    fontSize: 18,
+    fontWeight: 700,
+    color: "#2c3e3a",
+    letterSpacing: "-0.01em",
+  },
 
-const title = {
-  fontSize: "38px",
-  fontWeight: "700",
-  letterSpacing: "0.5px"
-};
+  logoutButton: {
+    padding: "9px 20px",
+    border: "1.5px solid rgba(220,38,38,0.4)",
+    borderRadius: 100,
+    background: "transparent",
+    color: "#dc2626",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    transition: "background 0.2s ease",
+  },
 
-const logoutButton = {
-  padding: "10px 16px",
-  border: "none",
-  borderRadius: "8px",
-  background: "#ef4444",
-  color: "white",
-  cursor: "pointer"
-};
+  welcome: {
+    marginBottom: "36px",
+  },
 
-const welcome = {
-  marginBottom: "30px"
-};
+  welcomeTitle: {
+    fontFamily: "'Playfair Display', Georgia, serif",
+    fontSize: "32px",
+    fontWeight: 700,
+    color: "#2c3e3a",
+    marginBottom: "8px",
+    letterSpacing: "-0.02em",
+  },
 
-const welcomeTitle = {
-  fontSize: "26px",
-  fontWeight: "600",
-  marginBottom: "8px"
-};
+  welcomeText: {
+    fontSize: "15px",
+    color: "#5a6e6a",
+  },
 
-const welcomeText = {
-  fontSize: "16px",
-  color: "#e5e7eb"
-};
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: "20px",
+  },
 
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-  gap: "20px"
-};
+  card: {
+    background: "#ffffff",
+    padding: "28px 26px",
+    borderRadius: 20,
+    boxShadow: "0 8px 32px rgba(45,106,100,0.08), 0 2px 8px rgba(0,0,0,0.04)",
+    border: "1px solid rgba(45,106,100,0.08)",
+    transition: "box-shadow 0.25s ease, transform 0.25s ease",
+    cursor: "default",
+  },
 
-const card = {
-  background: "rgba(255,255,255,0.95)",
-  color: "#111",
-  padding: "22px",
-  borderRadius: "12px"
-};
+  cardIcon: {
+    fontSize: 28,
+    marginBottom: 14,
+  },
 
-const cardTitle = {
-  fontSize: "18px",
-  fontWeight: "600",
-  marginBottom: "8px"
-};
+  cardTitle: {
+    fontFamily: "'Playfair Display', Georgia, serif",
+    fontSize: "17px",
+    fontWeight: 700,
+    color: "#2c3e3a",
+    marginBottom: "8px",
+    letterSpacing: "-0.01em",
+  },
 
-const cardText = {
-  fontSize: "14px",
-  color: "#555",
-  marginBottom: "12px"
-};
+  cardText: {
+    fontSize: "14px",
+    color: "#5a6e6a",
+    marginBottom: "20px",
+    lineHeight: 1.6,
+  },
 
-const buttonRow = {
-  display: "flex",
-  gap: "10px",
-  flexWrap: "wrap"
-};
+  buttonRow: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+  },
 
-const primaryButton = {
-  padding: "10px 14px",
-  border: "none",
-  borderRadius: "8px",
-  background: "#3b82f6",
-  color: "white",
-  cursor: "pointer"
-};
+  primaryButton: {
+    padding: "10px 18px",
+    border: "none",
+    borderRadius: 100,
+    background: "linear-gradient(135deg, #2d6a64 0%, #245854 100%)",
+    color: "white",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    boxShadow: "0 4px 14px rgba(45,106,100,0.2)",
+    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+  },
 
-const secondaryButton = {
-  padding: "10px 14px",
-  border: "none",
-  borderRadius: "8px",
-  background: "#10b981",
-  color: "white",
-  cursor: "pointer"
+  secondaryButton: {
+    padding: "10px 18px",
+    border: "1.5px solid rgba(45,106,100,0.25)",
+    borderRadius: 100,
+    background: "transparent",
+    color: "#2d6a64",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    transition: "background 0.2s ease",
+  },
 };
 
 export default Dashboard;
