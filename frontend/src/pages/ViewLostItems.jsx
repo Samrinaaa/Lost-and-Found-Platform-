@@ -20,6 +20,14 @@ const ViewLostItems = () => {
   const [matchError, setMatchError]     = useState("");
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
+  lost:  { bg: "rgba(239,68,68,0.1)",   color: "#dc2626" },
+  found: { bg: "rgba(16,185,129,0.1)",  color: "#059669" },
+};
+
+const ViewLostItems = () => {
+  const [lostItems, setLostItems] = useState([]);
+  const [message, setMessage] = useState("");
+  const [search, setSearch] = useState("");
 
   const fetchLostItems = async () => {
     try {
@@ -195,6 +203,35 @@ const ViewLostItems = () => {
         )}
 
         {/* Lost items grid */}
+
+        {/* Header */}
+        <div style={styles.header}>
+          <span style={styles.brandName}>Lost and Found</span>
+          <Link to="/dashboard">
+            <button style={styles.backBtn}>← Back to Dashboard</button>
+          </Link>
+        </div>
+
+        {/* Page title + search */}
+        <div style={styles.toolbar}>
+          <div>
+            <h1 style={styles.title}>Lost Items</h1>
+            <p style={styles.subtitle}>{lostItems.length} report{lostItems.length !== 1 ? "s" : ""} found</p>
+          </div>
+          <div style={styles.searchBox}>
+            <span style={{ fontSize: 16, color: "#5a6e6a" }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Search by name, location…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={styles.searchInput}
+            />
+          </div>
+        </div>
+
+        {message && <p style={styles.errorMsg}>{message}</p>}
+
         {lostItems.length === 0 ? (
           <div style={styles.emptyState}>
             <div style={{ fontSize: 52, marginBottom: 16 }}>🔍</div>
@@ -268,6 +305,53 @@ const ViewLostItems = () => {
                 </div>
               );
             })}
+            {lostItems.map((item) => (
+              <div
+                key={item._id}
+                style={styles.card}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 20px 50px rgba(45,106,100,0.15)"; e.currentTarget.style.transform = "translateY(-4px)"; }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 8px 32px rgba(45,106,100,0.08)"; e.currentTarget.style.transform = "translateY(0)"; }}
+              >
+                {/* Image */}
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} alt={item.itemName} style={styles.cardImg} />
+                ) : (
+                  <div style={styles.cardImgPlaceholder}>
+                    {categoryEmoji[item.category] || "📦"}
+                  </div>
+                )}
+
+                <div style={styles.cardBody}>
+                  {/* Category + status badges */}
+                  <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+                    {item.category && (
+                      <span style={styles.categoryBadge}>{item.category}</span>
+                    )}
+                    <span style={{ ...styles.statusBadge, ...(statusColors[item.status] || statusColors.lost) }}>
+                      {item.status}
+                    </span>
+                  </div>
+
+                  <h3 style={styles.cardTitle}>{item.itemName}</h3>
+
+                  {item.description && (
+                    <p style={styles.cardDesc}>{item.description}</p>
+                  )}
+
+                  <div style={styles.cardMeta}>
+                    {item.locationLost && (
+                      <span>📍 {item.locationLost}</span>
+                    )}
+                    {item.dateLost && (
+                      <span>📅 {new Date(item.dateLost).toLocaleDateString()}</span>
+                    )}
+                    {item.userId?.fullName && (
+                      <span>👤 {item.userId.fullName}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -318,6 +402,8 @@ const styles = {
   claimBtn: { width: "100%", padding: "9px 0", border: "none", borderRadius: 100, background: "linear-gradient(135deg, #2d6a64, #245854)", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 },
   card: { background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 8px 32px rgba(45,106,100,0.08)", transition: "box-shadow 0.25s ease, transform 0.25s ease" },
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 },
+  card: { background: "#fff", borderRadius: 20, overflow: "hidden", border: "1px solid rgba(45,106,100,0.08)", boxShadow: "0 8px 32px rgba(45,106,100,0.08)", transition: "box-shadow 0.25s ease, transform 0.25s ease" },
   cardImg: { width: "100%", height: 260, objectFit: "contain", background: "#fff" },
   cardImgPlaceholder: { width: "100%", height: 260, background: "linear-gradient(135deg, #f0faf8, #e6f4f1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 },
   cardBody: { padding: "18px 20px 22px" },
@@ -334,5 +420,7 @@ if (typeof document !== "undefined") {
   s.innerText = "@keyframes spin { to { transform: rotate(360deg); } }";
   document.head.appendChild(s);
 }
+  cardMeta: { display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#5a6e6a" },
+};
 
 export default ViewLostItems;

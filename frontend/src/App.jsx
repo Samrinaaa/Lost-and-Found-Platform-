@@ -93,7 +93,7 @@ function App() {
       />
 
       {/* ADMIN PROFILE */}
-      <Route
+      <Route                                           
         path="/admin/profile"
         element={
           <ProtectedRoute role="admin">
