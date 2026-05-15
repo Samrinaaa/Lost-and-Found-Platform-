@@ -1,9 +1,17 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+
+const NAV_ITEMS = [
+  { icon: "🏠", label: "Dashboard",    link: "/dashboard" },
+  { icon: "🔍", label: "Lost Items",   link: "/lost-items" },
+  { icon: "📦", label: "Found Items",  link: "/found-items" },
+  { icon: "📋", label: "My Claims",    link: "/claim-status" },
+];
 
 const Dashboard = () => {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user     = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -11,269 +19,308 @@ const Dashboard = () => {
     navigate("/login");
   };
 
+  const initials = user?.fullName
+    ?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "U";
+
   return (
-    <div style={styles.container}>
+    <div style={styles.shell}>
+      {/* ── Sidebar ── */}
+      <aside style={styles.sidebar}>
+        <div style={styles.brand}>
+          <div style={styles.brandLogoRow}>
+            <div style={styles.brandLogo}>L&F</div>
+            <div>
+              <div style={styles.brandName}>Lost and Found</div>
+              <div style={styles.brandSub}>User Portal</div>
+            </div>
+          </div>
+        </div>
 
-      {/* Background orbs — same as login */}
-      <div style={{ ...styles.orb, ...styles.orb1 }} />
-      <div style={{ ...styles.orb, ...styles.orb2 }} />
-      <div style={{ ...styles.orb, ...styles.orb3 }} />
+        <nav style={styles.nav}>
+          <span style={styles.navSection}>Menu</span>
+          {NAV_ITEMS.map(({ icon, label, link }) => {
+            const active = location.pathname === link;
+            return (
+              <Link key={link} to={link} style={{ textDecoration: "none" }}>
+                <div
+                  style={{ ...styles.navItem, ...(active ? styles.navItemActive : {}) }}
+                  onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "#f0f4f3"; }}
+                  onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                >
+                  <span style={styles.navIcon}>{icon}</span>
+                  {label}
+                </div>
+              </Link>
+            );
+          })}
+        </nav>
 
-      <div style={styles.content}>
-
-        {/* Header */}
-        <div style={styles.header}>
-          <span style={styles.brandName}>Lost and Found</span>
+        <div style={styles.sidebarFooter}>
+          <div style={styles.userRow}>
+            <div style={styles.avatar}>{initials}</div>
+            <div style={styles.userInfo}>
+              <div style={styles.userName}>{user?.fullName}</div>
+              <div style={styles.userRole}>User</div>
+            </div>
+          </div>
           <button
             onClick={handleLogout}
-            style={styles.logoutButton}
-            onMouseEnter={e => e.currentTarget.style.background = "rgba(220,38,38,0.08)"}
-            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            style={styles.logoutBtn}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background   = "#fef2f2";
+              e.currentTarget.style.borderColor  = "#fca5a5";
+              e.currentTarget.style.color        = "#dc2626";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background   = "#f9fafb";
+              e.currentTarget.style.borderColor  = "#e5e7eb";
+              e.currentTarget.style.color        = "#6b7280";
+            }}
           >
-            Logout
+            <span style={{ fontSize: 14 }}>→</span> Logout
           </button>
         </div>
+      </aside>
 
-        {/* Welcome */}
-        <div style={styles.welcome}>
-          <h1 style={styles.welcomeTitle}>
-            Welcome back, {user?.fullName} 
-          </h1>
-          <p style={styles.welcomeText}>
-            Manage your lost, found items and claims.
-          </p>
+      {/* ── Main ── */}
+      <main style={styles.main}>
+        {/* Topbar */}
+        <div style={styles.topbar}>
+          <h1 style={styles.pageTitle}>Welcome back, {user?.fullName?.split(" ")[0]} 👋</h1>
+          <p style={styles.pageSub}>Manage your lost, found items and claims.</p>
         </div>
 
-        {/* Cards */}
-        <div style={styles.grid}>
-
-          <DashboardCard
+        {/* Action cards */}
+        <div style={styles.cardsGrid}>
+          <ActionCard
             icon="🔍"
-            title="Lost Item Management"
-            desc="Report or browse lost items in the system."
-            primaryLink="/report-lost"
-            secondaryLink="/lost-items"
-            primaryText="Report Lost"
-            secondaryText="View Lost"
+            title="Lost Items"
+            desc="Report something you've lost or browse all reported lost items."
+            accent="#eff6ff"
+            iconBg="#dbeafe"
+            actions={[
+              { label: "Report Lost",     link: "/report-lost",  primary: true },
+              { label: "View Lost Items", link: "/lost-items",   primary: false },
+            ]}
           />
-
-          <DashboardCard
+          <ActionCard
             icon="📦"
-            title="Found Item Management"
-            desc="Report or browse found items in the system."
-            primaryLink="/report-found"
-            secondaryLink="/found-items"
-            primaryText="Report Found"
-            secondaryText="View Found"
+            title="Found Items"
+            desc="Report something you've found or browse all found items."
+            accent="#f0fdf4"
+            iconBg="#dcfce7"
+            actions={[
+              { label: "Report Found",     link: "/report-found", primary: true },
+              { label: "View Found Items", link: "/found-items",  primary: false },
+            ]}
           />
-
-          <DashboardCard
+          <ActionCard
             icon="📋"
-            title="Claim Management"
-            desc="Submit and track the status of your claims."
-            primaryLink="/claim"
-            secondaryLink="/claim-status"
-            primaryText="Submit Claim"
-            secondaryText="Track Status"
+            title="Claims"
+            desc="Submit a claim for a found item or track your existing claims."
+            accent="#fefce8"
+            iconBg="#fef9c3"
+            actions={[
+              { label: "Submit Claim",  link: "/claim",        primary: true },
+              { label: "Track Status",  link: "/claim-status", primary: false },
+            ]}
           />
-
         </div>
 
-      </div>
+        {/* Quick links row */}
+        <div style={styles.quickRow}>
+          <div style={styles.quickTitle}>Quick Actions</div>
+          <div style={styles.quickLinks}>
+            <QuickLink icon="➕" label="Report Lost Item"  link="/report-lost" />
+            <QuickLink icon="📬" label="Report Found Item" link="/report-found" />
+            <QuickLink icon="📝" label="Submit a Claim"    link="/claim" />
+            <QuickLink icon="📊" label="Track My Claims"   link="/claim-status" />
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
 
-/* ─── Card Component ────────────────────────── */
-
-const DashboardCard = ({ icon, title, desc, primaryLink, secondaryLink, primaryText, secondaryText }) => (
+/* ── ActionCard ── */
+const ActionCard = ({ icon, title, desc, accent, iconBg, actions }) => (
   <div
     style={styles.card}
-    onMouseEnter={e => {
-      e.currentTarget.style.boxShadow = "0 20px 50px rgba(45,106,100,0.15), 0 8px 24px rgba(0,0,0,0.06)";
-      e.currentTarget.style.transform = "translateY(-4px)";
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform  = "translateY(-2px)";
+      e.currentTarget.style.boxShadow  = "0 8px 24px rgba(0,0,0,0.08)";
+      e.currentTarget.style.borderColor = "#e5e7eb";
     }}
-    onMouseLeave={e => {
-      e.currentTarget.style.boxShadow = "0 8px 32px rgba(45,106,100,0.08), 0 2px 8px rgba(0,0,0,0.04)";
-      e.currentTarget.style.transform = "translateY(0)";
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform  = "translateY(0)";
+      e.currentTarget.style.boxShadow  = "none";
+      e.currentTarget.style.borderColor = "#f0f0f0";
     }}
   >
-    <div style={styles.cardIcon}>{icon}</div>
-    <h3 style={styles.cardTitle}>{title}</h3>
-    <p style={styles.cardText}>{desc}</p>
-
-    <div style={styles.buttonRow}>
-      <Link to={primaryLink}>
-        <button
-          style={styles.primaryButton}
-          onMouseEnter={e => {
-            e.currentTarget.style.transform = "translateY(-1px)";
-            e.currentTarget.style.boxShadow = "0 8px 20px rgba(45,106,100,0.35)";
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "0 4px 14px rgba(45,106,100,0.2)";
-          }}
-        >
-          {primaryText}
-        </button>
-      </Link>
-
-      <Link to={secondaryLink}>
-        <button
-          style={styles.secondaryButton}
-          onMouseEnter={e => e.currentTarget.style.background = "rgba(45,106,100,0.1)"}
-          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-        >
-          {secondaryText}
-        </button>
-      </Link>
+    <div style={{ ...styles.cardIconBox, background: iconBg }}>
+      <span style={{ fontSize: 22 }}>{icon}</span>
+    </div>
+    <div style={styles.cardTitle}>{title}</div>
+    <div style={styles.cardDesc}>{desc}</div>
+    <div style={styles.cardActions}>
+      {actions.map(({ label, link, primary }) => (
+        <Link key={link} to={link} style={{ textDecoration: "none", flex: 1 }}>
+          <button
+            style={{ ...styles.btn, ...(primary ? styles.btnPrimary : styles.btnSecondary) }}
+            onMouseEnter={(e) => {
+              if (primary) {
+                e.currentTarget.style.background = "#1e40af";
+              } else {
+                e.currentTarget.style.background  = "#f1f5f9";
+                e.currentTarget.style.borderColor = "#cbd5e1";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (primary) {
+                e.currentTarget.style.background = "#1d4ed8";
+              } else {
+                e.currentTarget.style.background  = "#f9fafb";
+                e.currentTarget.style.borderColor = "#e5e7eb";
+              }
+            }}
+          >
+            {label}
+          </button>
+        </Link>
+      ))}
     </div>
   </div>
 );
 
-/* ─── Styles ────────────────────────────────── */
+/* ── QuickLink ── */
+const QuickLink = ({ icon, label, link }) => (
+  <Link to={link} style={{ textDecoration: "none" }}>
+    <div
+      style={styles.quickLink}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background  = "#eff6ff";
+        e.currentTarget.style.borderColor = "#bfdbfe";
+        e.currentTarget.style.color       = "#1d4ed8";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background  = "#ffffff";
+        e.currentTarget.style.borderColor = "#f0f0f0";
+        e.currentTarget.style.color       = "#374151";
+      }}
+    >
+      <span style={{ fontSize: 16 }}>{icon}</span>
+      <span style={styles.quickLinkLabel}>{label}</span>
+      <span style={styles.quickLinkArrow}>→</span>
+    </div>
+  </Link>
+);
 
+/* ── Styles ── */
 const styles = {
-  container: {
-    minHeight: "100vh",
-    background: "#faf9f7",
+  shell: {
+    display: "flex", minHeight: "100vh", background: "#f5f5f4",
     fontFamily: "'Inter', 'Segoe UI', sans-serif",
-    position: "relative",
-    overflow: "hidden",
-    padding: "40px 20px",
   },
 
-  orb: {
-    position: "absolute",
-    borderRadius: "50%",
-    filter: "blur(80px)",
-    opacity: 0.5,
-    pointerEvents: "none",
+  /* Sidebar */
+  sidebar: {
+    width: 220, flexShrink: 0, background: "#ffffff",
+    borderRight: "1px solid #ebebeb", display: "flex", flexDirection: "column",
+    position: "sticky", top: 0, height: "100vh", overflowY: "auto",
   },
-  orb1: { width: 400, height: 400, background: "linear-gradient(135deg, #d4e8e6, #c5dbd9)", top: -100, right: -100 },
-  orb2: { width: 300, height: 300, background: "linear-gradient(135deg, #e8ead4, #dce0c8)", bottom: -80, left: -60 },
-  orb3: { width: 200, height: 200, background: "linear-gradient(135deg, #d4e5e3, #c8dbd8)", top: "40%", left: -80 },
-
-  content: {
-    position: "relative",
-    zIndex: 10,
-    maxWidth: "1000px",
-    margin: "0 auto",
+  brand: { padding: "20px 16px 18px", borderBottom: "1px solid #ebebeb" },
+  brandLogoRow: { display: "flex", alignItems: "center", gap: 10 },
+  brandLogo: {
+    width: 36, height: 36, borderRadius: 9,
+    background: "linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)",
+    color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: 11, fontWeight: 700, flexShrink: 0,
   },
-
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "40px",
+  brandName: { fontSize: 14, fontWeight: 700, color: "#111827", lineHeight: 1.2 },
+  brandSub:  { fontSize: 11, color: "#6b7280", fontWeight: 500, marginTop: 2 },
+  nav: { padding: "12px 0", flex: 1 },
+  navSection: {
+    display: "block", padding: "8px 18px 4px", fontSize: 10, fontWeight: 600,
+    color: "#9ca3af", letterSpacing: "0.07em", textTransform: "uppercase",
   },
-
-  brandName: {
-    fontFamily: "'Playfair Display', Georgia, serif",
-    fontSize: 18,
-    fontWeight: 700,
-    color: "#2c3e3a",
-    letterSpacing: "-0.01em",
+  navItem: {
+    display: "flex", alignItems: "center", gap: 9, padding: "8px 18px",
+    fontSize: 13, color: "#6b7280", borderLeft: "2px solid transparent", cursor: "pointer",
   },
-
-  logoutButton: {
-    padding: "9px 20px",
-    border: "1.5px solid rgba(220,38,38,0.4)",
-    borderRadius: 100,
-    background: "transparent",
-    color: "#dc2626",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-    transition: "background 0.2s ease",
+  navItemActive: { color: "#111827", fontWeight: 500, borderLeftColor: "#1d4ed8", background: "#eff6ff" },
+  navIcon: { fontSize: 15, lineHeight: 1 },
+  sidebarFooter: {
+    padding: "14px 16px", borderTop: "1px solid #ebebeb",
+    display: "flex", flexDirection: "column", gap: 8,
   },
-
-  welcome: {
-    marginBottom: "36px",
+  userRow: { display: "flex", alignItems: "center", gap: 9, padding: "4px 0" },
+  avatar: {
+    width: 32, height: 32, borderRadius: "50%",
+    background: "linear-gradient(135deg, #dbeafe, #bfdbfe)",
+    color: "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: 11, fontWeight: 700, flexShrink: 0,
   },
-
-  welcomeTitle: {
-    fontFamily: "'Playfair Display', Georgia, serif",
-    fontSize: "32px",
-    fontWeight: 700,
-    color: "#2c3e3a",
-    marginBottom: "8px",
-    letterSpacing: "-0.02em",
+  userInfo: { flex: 1, minWidth: 0 },
+  userName: { fontSize: 12, fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  userRole: { fontSize: 11, color: "#9ca3af" },
+  logoutBtn: {
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+    width: "100%", padding: "7px 12px", background: "#f9fafb",
+    border: "1px solid #e5e7eb", borderRadius: 8, cursor: "pointer",
+    color: "#6b7280", fontSize: 12, fontWeight: 500,
+    transition: "background 0.15s, border-color 0.15s, color 0.15s",
   },
 
-  welcomeText: {
-    fontSize: "15px",
-    color: "#5a6e6a",
-  },
+  /* Main */
+  main: { flex: 1, padding: "28px 32px", overflowY: "auto" },
+  topbar: { marginBottom: 24 },
+  pageTitle: { fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 4, letterSpacing: "-0.01em" },
+  pageSub: { fontSize: 13, color: "#6b7280" },
 
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    gap: "20px",
+  /* Action cards */
+  cardsGrid: {
+    display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 20,
   },
-
   card: {
-    background: "#ffffff",
-    padding: "28px 26px",
-    borderRadius: 20,
-    boxShadow: "0 8px 32px rgba(45,106,100,0.08), 0 2px 8px rgba(0,0,0,0.04)",
-    border: "1px solid rgba(45,106,100,0.08)",
-    transition: "box-shadow 0.25s ease, transform 0.25s ease",
-    cursor: "default",
+    background: "#ffffff", border: "1px solid #f0f0f0", borderRadius: 14,
+    padding: "20px 18px", display: "flex", flexDirection: "column", gap: 0,
+    transition: "transform 0.15s, box-shadow 0.15s, border-color 0.15s",
+  },
+  cardIconBox: {
+    width: 44, height: 44, borderRadius: 10,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    marginBottom: 14, flexShrink: 0,
+  },
+  cardTitle: { fontSize: 14, fontWeight: 600, color: "#111827", marginBottom: 6 },
+  cardDesc:  { fontSize: 12, color: "#9ca3af", lineHeight: 1.5, marginBottom: 18, flex: 1 },
+  cardActions: { display: "flex", gap: 8 },
+  btn: {
+    width: "100%", padding: "8px 10px", border: "none", borderRadius: 8,
+    fontSize: 12, fontWeight: 600, cursor: "pointer",
+    transition: "background 0.15s, border-color 0.15s",
+  },
+  btnPrimary: {
+    background: "#1d4ed8", color: "#ffffff", border: "none",
+  },
+  btnSecondary: {
+    background: "#f9fafb", color: "#374151",
+    border: "1px solid #e5e7eb",
   },
 
-  cardIcon: {
-    fontSize: 28,
-    marginBottom: 14,
+  /* Quick links */
+  quickRow: {
+    background: "#ffffff", border: "1px solid #f0f0f0", borderRadius: 14, padding: "18px 20px",
   },
-
-  cardTitle: {
-    fontFamily: "'Playfair Display', Georgia, serif",
-    fontSize: "17px",
-    fontWeight: 700,
-    color: "#2c3e3a",
-    marginBottom: "8px",
-    letterSpacing: "-0.01em",
+  quickTitle: { fontSize: 13, fontWeight: 600, color: "#111827", marginBottom: 12 },
+  quickLinks: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 },
+  quickLink: {
+    display: "flex", alignItems: "center", gap: 8, padding: "11px 14px",
+    border: "1px solid #f0f0f0", borderRadius: 10, background: "#ffffff",
+    cursor: "pointer", transition: "background 0.15s, border-color 0.15s, color 0.15s",
+    color: "#374151",
   },
-
-  cardText: {
-    fontSize: "14px",
-    color: "#5a6e6a",
-    marginBottom: "20px",
-    lineHeight: 1.6,
-  },
-
-  buttonRow: {
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-  },
-
-  primaryButton: {
-    padding: "10px 18px",
-    border: "none",
-    borderRadius: 100,
-    background: "linear-gradient(135deg, #2d6a64 0%, #245854 100%)",
-    color: "white",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-    boxShadow: "0 4px 14px rgba(45,106,100,0.2)",
-    transition: "transform 0.2s ease, box-shadow 0.2s ease",
-  },
-
-  secondaryButton: {
-    padding: "10px 18px",
-    border: "1.5px solid rgba(45,106,100,0.25)",
-    borderRadius: 100,
-    background: "transparent",
-    color: "#2d6a64",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-    transition: "background 0.2s ease",
-  },
+  quickLinkLabel: { fontSize: 12, fontWeight: 500, flex: 1 },
+  quickLinkArrow: { fontSize: 12, color: "#d1d5db" },
 };
 
 export default Dashboard;

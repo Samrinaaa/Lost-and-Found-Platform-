@@ -10,11 +10,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Import Routes
-const authRoute = require("./routes/authRoute");
-const lostItemRoute = require("./routes/lostItemRoute");
+const authRoute      = require("./routes/authRoute");
+const lostItemRoute  = require("./routes/lostItemRoute");
 const foundItemRoute = require("./routes/foundItemRoute");
-const claimRoute = require("./routes/claimRoute");
-const adminRoute = require("./routes/adminRoute");
+const claimRoute     = require("./routes/claimRoute");
+const adminRoute     = require("./routes/adminRoute");
+const matchRoute     = require("./routes/matchRoute");
 
 // Connect to DB
 mongoose.connect(process.env.MONGO_URI)
@@ -23,15 +24,16 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Default route
 app.get("/", (req, res) => {
-  res.send("Lost & Found API Running...");
+  res.send("Lost and Found API Running...");
 });
 
 // Use Routes
-app.use("/api/auth", authRoute);
-app.use("/api/lost", lostItemRoute);
+app.use("/api/auth",  authRoute);
+app.use("/api/lost",  lostItemRoute);
 app.use("/api/found", foundItemRoute);
 app.use("/api/claim", claimRoute);
 app.use("/api/admin", adminRoute);
+app.use("/api/match", matchRoute);
 
 // Start server
 app.listen(5001, () => console.log("Server running on port 5001"));

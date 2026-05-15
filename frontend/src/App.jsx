@@ -29,7 +29,9 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/verify-otp" element={<VerifyOtp />} /> 
+      <Route path="/verify-otp" element={<VerifyOtp />} />
+      <Route path="/lost-items" element={<ViewLostItems />} />
+      <Route path="/found-items" element={<ViewFoundItems />} />
 
       {/* USER DASHBOARD */}
       <Route
@@ -51,30 +53,12 @@ function App() {
         }
       />
 
-      <Route
-        path="/lost-items"
-        element={
-          <ProtectedRoute>
-            <ViewLostItems />
-          </ProtectedRoute>
-        }
-      />
-
       {/* FOUND ITEMS */}
       <Route
         path="/report-found"
         element={
           <ProtectedRoute>
             <ReportFound />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/found-items"
-        element={
-          <ProtectedRoute>
-            <ViewFoundItems />
           </ProtectedRoute>
         }
       />
@@ -109,7 +93,7 @@ function App() {
       />
 
       {/* ADMIN PROFILE */}
-      <Route                                           
+      <Route
         path="/admin/profile"
         element={
           <ProtectedRoute role="admin">
