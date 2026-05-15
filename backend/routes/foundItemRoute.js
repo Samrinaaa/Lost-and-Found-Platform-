@@ -3,6 +3,7 @@ const router = express.Router();
 const FoundItem = require("../models/FoundItem");
 const auth = require("../middleware/auth");
 const { uploadItem } = require("../config/cloudinary");
+const { getCache, setCache, deleteCache } = require("../config/redis");
 
 // ADD FOUND ITEM
 router.post("/", auth, uploadItem.single("image"), async (req, res) => {
@@ -14,6 +15,10 @@ router.post("/", auth, uploadItem.single("image"), async (req, res) => {
     });
 
     await item.save();
+
+    // Clear cache so next GET fetches fresh data from MongoDB
+    await deleteCache("found_items");
+
     res.status(201).json(item);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -23,16 +28,32 @@ router.post("/", auth, uploadItem.single("image"), async (req, res) => {
 // GET ALL FOUND ITEMS
 router.get("/", async (req, res) => {
   try {
-    const search = req.query.search || ""; 
+    const search = req.query.search || "";
 
-    const items = await FoundItem.find({
-      $or: [
-        { itemName: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { locationFound: { $regex: search, $options: "i" } }
-      ]
-    })
-      .populate("userId", "fullName email");
+    // Only use cache when there is no search query
+    if (!search) {
+      const cached = await getCache("found_items");
+      if (cached) {
+        return res.json(cached);
+      }
+    }
+
+    const items = await FoundItem.find(
+      search
+        ? {
+            $or: [
+              { itemName: { $regex: search, $options: "i" } },
+              { description: { $regex: search, $options: "i" } },
+              { locationFound: { $regex: search, $options: "i" } },
+            ],
+          }
+        : {}
+    ).populate("userId", "fullName email");
+
+    // Cache only the full unfiltered list
+    if (!search) {
+      await setCache("found_items", items, 300); // 5 minutes TTL
+    }
 
     res.json(items);
   } catch (error) {
@@ -43,9 +64,10 @@ router.get("/", async (req, res) => {
 // GET FOUND ITEM BY ID
 router.get("/:id", async (req, res) => {
   try {
-    const item = await FoundItem.findById(req.params.id)
-      .populate("userId", "fullName email");
-
+    const item = await FoundItem.findById(req.params.id).populate(
+      "userId",
+      "fullName email"
+    );
     res.json(item);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -63,11 +85,11 @@ router.delete("/:id", auth, async (req, res) => {
 
     await FoundItem.findByIdAndDelete(req.params.id);
 
-    console.log(`User ${req.user.id} deleted found item: ${item.itemName}`); 
+    // Clear cache
+    await deleteCache("found_items");
 
     res.json({ message: "Found item deleted successfully" });
   } catch (error) {
-    console.error("Delete found item error:", error); 
     res.status(500).json({ error: error.message });
   }
 });

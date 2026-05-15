@@ -3,6 +3,7 @@ const router = express.Router();
 const LostItem = require("../models/LostItem");
 const auth = require("../middleware/auth");
 const { uploadItem } = require("../config/cloudinary");
+const { getCache, setCache, deleteCache } = require("../config/redis");
 
 // ADD LOST ITEM
 router.post("/", auth, uploadItem.single("image"), async (req, res) => {
@@ -14,24 +15,45 @@ router.post("/", auth, uploadItem.single("image"), async (req, res) => {
     });
 
     await item.save();
+
+    // Clear cache so next GET fetches fresh data from MongoDB
+    await deleteCache("lost_items");
+
     res.status(201).json(item);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// GET ALL LOST ITEMS 
+// GET ALL LOST ITEMS
 router.get("/", async (req, res) => {
   try {
     const search = req.query.search || "";
 
-    const items = await LostItem.find({
-      $or: [
-        { itemName: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { locationLost: { $regex: search, $options: "i" } }
-      ]
-    }).populate("userId", "fullName email");
+    // Only use cache when there is no search query
+    if (!search) {
+      const cached = await getCache("lost_items");
+      if (cached) {
+        return res.json(cached);
+      }
+    }
+
+    const items = await LostItem.find(
+      search
+        ? {
+            $or: [
+              { itemName: { $regex: search, $options: "i" } },
+              { description: { $regex: search, $options: "i" } },
+              { locationLost: { $regex: search, $options: "i" } },
+            ],
+          }
+        : {}
+    ).populate("userId", "fullName email");
+
+    // Cache only the full unfiltered list
+    if (!search) {
+      await setCache("lost_items", items, 300); // 5 minutes TTL
+    }
 
     res.json(items);
   } catch (error) {
@@ -42,8 +64,35 @@ router.get("/", async (req, res) => {
 // GET LOST ITEM BY ID
 router.get("/:id", async (req, res) => {
   try {
-    const item = await LostItem.findById(req.params.id).populate("userId", "fullName email");
+    const item = await LostItem.findById(req.params.id).populate(
+      "userId",
+      "fullName email"
+    );
     res.json(item);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE LOST ITEM
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    const item = await LostItem.findById(req.params.id);
+
+    if (!item) {
+      return res.status(404).json({ message: "Lost item not found" });
+    }
+
+    if (item.userId.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorised" });
+    }
+
+    await LostItem.findByIdAndDelete(req.params.id);
+
+    // Clear cache
+    await deleteCache("lost_items");
+
+    res.json({ message: "Lost item deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

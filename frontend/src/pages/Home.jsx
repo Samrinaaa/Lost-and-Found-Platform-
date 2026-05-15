@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import heroImage from "../assets/image.png";
 
 const Home = () => {
@@ -97,6 +97,7 @@ const Home = () => {
                 iconColor="#2d6a64"
                 title="Lost Items"
                 desc="Browse reports of missing belongings submitted by users across campus."
+                to="/lost-items"
                 onClick={() => navigate("/lost-items")}
               />
 
@@ -106,6 +107,7 @@ const Home = () => {
                 iconColor="#5a7d52"
                 title="Found Items"
                 desc="Explore items discovered and reported by the community — yours may be here."
+                to="/found-items"
                 onClick={() => navigate("/found-items")}
               />
             </div>
@@ -228,7 +230,7 @@ const BagIcon = () => (
 
 /* ─── Sub-components ────────────────────────── */
 
-const ExploreCard = ({ icon, iconBg, iconColor, title, desc, onClick }) => {
+const ExploreCard = ({ icon, iconBg, iconColor, title, desc, onClick, to }) => {
   const [hovered, setHovered] = React.useState(false);
   return (
     <div
@@ -237,8 +239,8 @@ const ExploreCard = ({ icon, iconBg, iconColor, title, desc, onClick }) => {
         ...styles.exploreCard,
         transform: hovered ? "translateY(-6px)" : "translateY(0)",
         borderColor: hovered ? "rgba(45,106,100,0.35)" : "rgba(45,106,100,0.12)",
-        boxShadow: hovered 
-          ? "0 20px 40px rgba(45,106,100,0.15), 0 8px 16px rgba(0,0,0,0.06)" 
+        boxShadow: hovered
+          ? "0 20px 40px rgba(45,106,100,0.15), 0 8px 16px rgba(0,0,0,0.06)"
           : "0 4px 16px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02)",
       }}
       onMouseEnter={() => setHovered(true)}
@@ -247,10 +249,17 @@ const ExploreCard = ({ icon, iconBg, iconColor, title, desc, onClick }) => {
       <div style={{ ...styles.ecIcon, background: iconBg, color: iconColor }}>{icon}</div>
       <p style={styles.ecTitle}>{title}</p>
       <p style={styles.ecDesc}>{desc}</p>
-      <span style={{
-        ...styles.ecLink,
-        color: hovered ? "#1f524d" : "#2d6a64",
-      }}>View all →</span>
+      <Link
+        to={to}
+        onClick={e => e.stopPropagation()}
+        style={{
+          ...styles.ecLink,
+          color: hovered ? "#1f524d" : "#2d6a64",
+          textDecoration: "none",
+        }}
+      >
+        View all →
+      </Link>
     </div>
   );
 };
@@ -269,7 +278,7 @@ const StepCard = ({ number, icon, title, desc, isLast }) => (
   </div>
 );
 
-/* ─── Keyframes (add to your global CSS) ───── */
+/* ─── Keyframes ─────────────────────────────── */
 const floatKeyframes = `
 @keyframes float {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -277,7 +286,6 @@ const floatKeyframes = `
 }
 `;
 
-// Inject keyframes
 if (typeof document !== 'undefined') {
   const styleSheet = document.createElement("style");
   styleSheet.innerText = floatKeyframes;
@@ -294,7 +302,6 @@ const styles = {
     minHeight: "100vh",
   },
 
-  /* Hero */
   hero: {
     position: "relative",
     minHeight: "auto",
@@ -327,7 +334,7 @@ const styles = {
   },
   orb1: { width: 450, height: 450, background: "linear-gradient(135deg, #d4e8e6, #c5dbd9)", top: -180, right: -120 },
   orb2: { width: 350, height: 350, background: "linear-gradient(135deg, #e8ead4, #dce0c8)", bottom: -120, left: -80 },
-  
+
   floatingIcon: {
     position: "absolute",
     width: 56,
@@ -376,7 +383,6 @@ const styles = {
     margin: "0 0 14px",
     letterSpacing: "-0.02em",
   },
-  heroTitleAccent: { color: "#2d6a64" },
   heroTagline: {
     fontFamily: "'Playfair Display', Georgia, serif",
     fontSize: "clamp(1rem, 2vw, 1.2rem)",
@@ -424,7 +430,6 @@ const styles = {
     transition: "transform 0.2s ease, background 0.2s ease",
   },
 
-  /* Combined section */
   combinedSection: {
     padding: "70px 24px 80px",
     background: "#f5f4f1",
@@ -442,13 +447,8 @@ const styles = {
     width: 1,
     alignSelf: "stretch",
     background: "linear-gradient(180deg, transparent, rgba(45,106,100,0.15), transparent)",
-    display: "none",
-    "@media (min-width: 900px)": {
-      display: "block",
-    },
   },
 
-  /* Browse column */
   browseColumn: {
     flex: "1 1 460px",
     minWidth: 280,
@@ -484,15 +484,14 @@ const styles = {
   },
   ecTitle: { fontSize: 16, fontWeight: 600, color: "#2c3e3a", margin: "0 0 8px" },
   ecDesc: { fontSize: 13, color: "#5a6e6a", lineHeight: 1.65, margin: 0 },
-  ecLink: { 
-    display: "inline-block", 
-    fontSize: 13, 
-    fontWeight: 600, 
-    marginTop: 16, 
+  ecLink: {
+    display: "inline-block",
+    fontSize: 13,
+    fontWeight: 600,
+    marginTop: 16,
     transition: "color 0.2s ease",
   },
 
-  /* Process column */
   processColumn: {
     flex: "1 1 380px",
     minWidth: 260,
@@ -530,10 +529,10 @@ const styles = {
   stepRight: {
     paddingTop: 6,
   },
-  stepIcon: { 
-    fontSize: 18, 
-    display: "flex", 
-    marginBottom: 10, 
+  stepIcon: {
+    fontSize: 18,
+    display: "flex",
+    marginBottom: 10,
     color: "#2d6a64",
     width: 36,
     height: 36,
@@ -545,13 +544,11 @@ const styles = {
   stepTitle: { fontSize: 15, fontWeight: 600, color: "#2c3e3a", margin: "0 0 6px" },
   stepDesc: { fontSize: 13, color: "#5a6e6a", lineHeight: 1.6, margin: 0 },
 
-  /* Shared */
   eyebrow: {
     fontSize: 11, fontWeight: 600, letterSpacing: "0.14em",
     textTransform: "uppercase", color: "#2d6a64", margin: "0 0 8px",
   },
 
-  /* CTA */
   cta: {
     padding: "80px 24px",
     background: "linear-gradient(180deg, #e8f0ef 0%, #dce6e5 100%)",
@@ -582,13 +579,13 @@ const styles = {
   ctaTitle: {
     fontFamily: "'Playfair Display', Georgia, serif",
     fontSize: "clamp(1.5rem, 3vw, 2rem)",
-    fontWeight: 700, 
-    color: "#2c3e3a", 
+    fontWeight: 700,
+    color: "#2c3e3a",
     margin: "0 0 12px",
   },
-  ctaSub: { 
-    fontSize: 15, 
-    color: "#5a6e6a", 
+  ctaSub: {
+    fontSize: 15,
+    color: "#5a6e6a",
     margin: "0 0 28px",
     lineHeight: 1.6,
   },

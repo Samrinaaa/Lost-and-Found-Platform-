@@ -1,9 +1,47 @@
-import React from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
+import API from "../services/api";
+
+const NAV_ITEMS = [
+  { icon: "🏠", label: "Dashboard",   link: "/admin" },
+  { icon: "👥", label: "Users",       link: "/admin/users" },
+  { icon: "📋", label: "Claims",      link: "/admin/claims" },
+  { icon: "🔍", label: "Lost Items",  link: "/admin/lost-items" },
+  { icon: "📦", label: "Found Items", link: "/admin/found-items" },
+];
 
 const AdminDashboard = () => {
   const currentUser = JSON.parse(localStorage.getItem("user"));
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
+  const location  = useLocation();
+
+  const [stats, setStats] = useState({ totalUsers: 0, totalLost: 0, totalFound: 0, totalClaims: 0 });
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await API.get("/admin/stats");
+        setStats(res.data);
+      } catch (err) {
+        console.error("Failed to fetch stats:", err);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (showProfileModal && !e.target.closest("#profile-modal") && !e.target.closest("#user-row-btn")) {
+        setShowProfileModal(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showProfileModal]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -11,271 +49,285 @@ const AdminDashboard = () => {
     navigate("/login");
   };
 
+  const initials = currentUser?.fullName
+    ?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "AD";
+
   return (
-    <div style={styles.container}>
-
-      {/* Background orbs */}
-      <div style={{ ...styles.orb, ...styles.orb1 }} />
-      <div style={{ ...styles.orb, ...styles.orb2 }} />
-      <div style={{ ...styles.orb, ...styles.orb3 }} />
-
-      <div style={styles.content}>
-
-        {/* Header */}
-        <div style={styles.header}>
-          <span style={styles.brandName}>Lost and Found</span>
-          <button
-            onClick={handleLogout}
-            style={styles.logoutButton}
-            onMouseEnter={e => e.currentTarget.style.background = "rgba(220,38,38,0.08)"}
-            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-          >
-            Logout
-          </button>
-        </div>
-
-        {/* Welcome */}
-        <div style={styles.welcome}>
-          <h1 style={styles.welcomeTitle}>
-            Welcome, {currentUser?.fullName} 
-          </h1>
-          <p style={styles.welcomeText}>
-            Manage users, items, and claims efficiently.
-          </p>
-        </div>
-
-        {/* Profile Card */}
-        <div style={styles.profileCard}>
-          <h3 style={styles.profileTitle}>Admin Profile</h3>
-          <div style={styles.profileGrid}>
-            <ProfileRow label="Name"  value={currentUser?.fullName} />
-            <ProfileRow label="Email" value={currentUser?.email} />
-            <ProfileRow label="Phone" value={currentUser?.phone} />
-            <ProfileRow label="Role"  value={currentUser?.role} />
+    <div style={styles.shell}>
+      {/* ── Sidebar ── */}
+      <aside style={styles.sidebar}>
+        <div style={styles.brand}>
+          <div style={styles.brandLogoRow}>
+            <div style={styles.brandLogo}>L&F</div>
+            <div>
+              <div style={styles.brandName}>Lost and Found</div>
+              <div style={styles.brandSub}>Admin Panel</div>
+            </div>
           </div>
         </div>
 
-        {/* Management Cards */}
-        <div style={styles.grid}>
-          <Card icon="👥" title="Manage Users"       desc="View and manage registered users."      link="/admin/users" />
-          <Card icon="📋" title="Manage Claims"      desc="Review and process submitted claims."   link="/admin/claims" />
-          <Card icon="🔍" title="Manage Lost Items"  desc="Oversee and manage lost item reports."  link="/admin/lost-items" />
-          <Card icon="📦" title="Manage Found Items" desc="Oversee and manage found item reports." link="/admin/found-items" />
+        <nav style={styles.nav}>
+          <span style={styles.navSection}>Menu</span>
+          {NAV_ITEMS.map(({ icon, label, link }) => {
+            const active = location.pathname === link;
+            return (
+              <Link key={link} to={link} style={{ textDecoration: "none" }}>
+                <div
+                  style={{ ...styles.navItem, ...(active ? styles.navItemActive : {}) }}
+                  onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "#f0f4f3"; }}
+                  onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                >
+                  <span style={styles.navIcon}>{icon}</span>
+                  {label}
+                </div>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div style={styles.sidebarFooter}>
+          <div style={{ position: "relative" }}>
+            <button
+              id="user-row-btn"
+              onClick={() => setShowProfileModal((v) => !v)}
+              style={styles.userRowBtn}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#f9fafb"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
+              <div style={styles.avatar}>{initials}</div>
+              <div style={styles.userInfo}>
+                <div style={styles.userName}>{currentUser?.fullName}</div>
+                <div style={styles.userRole}>Admin</div>
+              </div>
+              <span style={styles.chevron}>{showProfileModal ? "▲" : "▼"}</span>
+            </button>
+
+            {showProfileModal && (
+              <div id="profile-modal" style={styles.profileModal}>
+                <div style={styles.profileModalHeader}>
+                  <div style={styles.profileModalAvatar}>{initials}</div>
+                  <div>
+                    <div style={styles.profileModalName}>{currentUser?.fullName}</div>
+                    <div style={styles.profileModalEmail}>{currentUser?.email || "admin@example.com"}</div>
+                    <span style={styles.profileModalBadge}>Admin</span>
+                  </div>
+                </div>
+                <div style={styles.profileModalDivider} />
+                <Link to="/admin/profile" style={{ textDecoration: "none" }} onClick={() => setShowProfileModal(false)}>
+                  <div style={styles.profileModalItem}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#f9fafb"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <span>👤</span> View Profile
+                  </div>
+                </Link>
+                <Link to="/admin/profile?tab=password" style={{ textDecoration: "none" }} onClick={() => setShowProfileModal(false)}>
+                  <div style={styles.profileModalItem}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#f9fafb"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <span>🔒</span> Change Password
+                  </div>
+                </Link>
+                <div style={styles.profileModalDivider} />
+                <div
+                  style={{ ...styles.profileModalItem, color: "#dc2626" }}
+                  onClick={handleLogout}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#fef2f2"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  <span>→</span> Logout
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleLogout}
+            style={styles.logoutBtn}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#fef2f2";
+              e.currentTarget.style.borderColor = "#fca5a5";
+              e.currentTarget.style.color = "#dc2626";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#f9fafb";
+              e.currentTarget.style.borderColor = "#e5e7eb";
+              e.currentTarget.style.color = "#6b7280";
+            }}
+          >
+            <span style={{ fontSize: 14 }}>→</span> Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Main ── */}
+      <main style={styles.main}>
+        <div style={styles.topbar}>
+          <h1 style={styles.pageTitle}>Welcome back, {currentUser?.fullName?.split(" ")[0]} 👋</h1>
+          <p style={styles.pageSub}>Here's what's happening on your platform today.</p>
         </div>
 
-      </div>
+        {/* Stat cards — compact, 2-col */}
+        <div style={styles.statsGrid}>
+          <StatCard icon="👥" label="Total Users"  value={stats.totalUsers}  loading={loadingStats} accent="#2563eb" bg="#eff6ff" />
+          <StatCard icon="🔍" label="Lost Items"   value={stats.totalLost}   loading={loadingStats} accent="#d97706" bg="#fffbeb" />
+          <StatCard icon="📦" label="Found Items"  value={stats.totalFound}  loading={loadingStats} accent="#16a34a" bg="#f0fdf4" />
+          <StatCard icon="📋" label="Total Claims" value={stats.totalClaims} loading={loadingStats} accent="#dc2626" bg="#fef2f2" />
+        </div>
+
+        {/* Management — 2-col */}
+        <div style={styles.panel}>
+          <div style={styles.panelHeader}>
+            <span style={styles.panelTitle}>Management</span>
+          </div>
+          <div style={styles.mgmtGrid}>
+            <MgmtCard icon="👥" title="Users"       desc="Manage registered accounts"  link="/admin/users"       accent="#dbeafe" />
+            <MgmtCard icon="📋" title="Claims"      desc="Review submitted claims"     link="/admin/claims"      accent="#fef3c7" />
+            <MgmtCard icon="🔍" title="Lost Items"  desc="Oversee lost reports"        link="/admin/lost-items"  accent="#dcfce7" />
+            <MgmtCard icon="📦" title="Found Items" desc="Oversee found reports"       link="/admin/found-items" accent="#f3e8ff" />
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
 
-/* ─── Sub-components ────────────────────────── */
-
-const ProfileRow = ({ label, value }) => (
-  <div style={styles.profileRow}>
-    <span style={styles.profileLabel}>{label}</span>
-    <span style={styles.profileValue}>{value || "—"}</span>
+/* ── Sub-components ── */
+const StatCard = ({ icon, label, value, loading, bg }) => (
+  <div style={styles.statCard}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div>
+        <div style={styles.statLabel}>{label}</div>
+        <div style={styles.statVal}>{loading ? "—" : value}</div>
+      </div>
+      <div style={{ ...styles.statIconBox, background: bg }}>
+        <span style={{ fontSize: 22 }}>{icon}</span>
+      </div>
+    </div>
   </div>
 );
 
-const Card = ({ icon, title, desc, link }) => (
-  <div
-    style={styles.card}
-    onMouseEnter={e => {
-      e.currentTarget.style.boxShadow = "0 20px 50px rgba(45,106,100,0.15), 0 8px 24px rgba(0,0,0,0.06)";
-      e.currentTarget.style.transform = "translateY(-4px)";
-    }}
-    onMouseLeave={e => {
-      e.currentTarget.style.boxShadow = "0 8px 32px rgba(45,106,100,0.08), 0 2px 8px rgba(0,0,0,0.04)";
-      e.currentTarget.style.transform = "translateY(0)";
-    }}
-  >
-    <div style={styles.cardIcon}>{icon}</div>
-    <h3 style={styles.cardTitle}>{title}</h3>
-    <p style={styles.cardText}>{desc}</p>
-    <Link to={link}>
-      <button
-        style={styles.cardButton}
-        onMouseEnter={e => {
-          e.currentTarget.style.transform = "translateY(-1px)";
-          e.currentTarget.style.boxShadow = "0 8px 20px rgba(45,106,100,0.35)";
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "0 4px 14px rgba(45,106,100,0.2)";
-        }}
-      >
-        Open
-      </button>
-    </Link>
-  </div>
+const MgmtCard = ({ icon, title, desc, link, accent }) => (
+  <Link to={link} style={{ textDecoration: "none" }}>
+    <div
+      style={styles.mgmtCard}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background  = "#fafafa";
+        e.currentTarget.style.borderColor = "#d1d5db";
+        e.currentTarget.style.transform   = "translateY(-1px)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background  = "#ffffff";
+        e.currentTarget.style.borderColor = "#f0f0f0";
+        e.currentTarget.style.transform   = "translateY(0)";
+      }}
+    >
+      <div style={{ ...styles.mgmtIcon, background: accent }}>
+        <span style={{ fontSize: 18 }}>{icon}</span>
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={styles.mgmtTitle}>{title}</div>
+        <div style={styles.mgmtDesc}>{desc}</div>
+      </div>
+      <span style={styles.mgmtArrow}>→</span>
+    </div>
+  </Link>
 );
 
-/* ─── Styles ────────────────────────────────── */
-
+/* ── Styles ── */
 const styles = {
-  container: {
-    minHeight: "100vh",
-    background: "#faf9f7",
-    fontFamily: "'Inter', 'Segoe UI', sans-serif",
-    position: "relative",
-    overflow: "hidden",
-    padding: "40px 20px",
+  shell: { display: "flex", minHeight: "100vh", background: "#f5f5f4", fontFamily: "'Inter', 'Segoe UI', sans-serif" },
+  sidebar: {
+    width: 220, flexShrink: 0, background: "#ffffff", borderRight: "1px solid #ebebeb",
+    display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh", overflowY: "auto",
   },
-
-  orb: {
-    position: "absolute",
-    borderRadius: "50%",
-    filter: "blur(80px)",
-    opacity: 0.5,
-    pointerEvents: "none",
+  brand: { padding: "20px 16px 18px", borderBottom: "1px solid #ebebeb" },
+  brandLogoRow: { display: "flex", alignItems: "center", gap: 10 },
+  brandLogo: {
+    width: 36, height: 36, borderRadius: 9,
+    background: "linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)",
+    color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: 11, fontWeight: 700, flexShrink: 0,
   },
-  orb1: { width: 400, height: 400, background: "linear-gradient(135deg, #d4e8e6, #c5dbd9)", top: -100, right: -100 },
-  orb2: { width: 300, height: 300, background: "linear-gradient(135deg, #e8ead4, #dce0c8)", bottom: -80, left: -60 },
-  orb3: { width: 200, height: 200, background: "linear-gradient(135deg, #d4e5e3, #c8dbd8)", top: "40%", left: -80 },
-
-  content: {
-    position: "relative",
-    zIndex: 10,
-    maxWidth: "1000px",
-    margin: "0 auto",
+  brandName: { fontSize: 14, fontWeight: 700, color: "#111827", lineHeight: 1.2 },
+  brandSub: { fontSize: 11, color: "#6b7280", fontWeight: 500, marginTop: 2 },
+  nav: { padding: "12px 0", flex: 1 },
+  navSection: {
+    display: "block", padding: "8px 18px 4px", fontSize: 10, fontWeight: 600,
+    color: "#9ca3af", letterSpacing: "0.07em", textTransform: "uppercase",
   },
-
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "40px",
+  navItem: {
+    display: "flex", alignItems: "center", gap: 9, padding: "8px 18px",
+    fontSize: 13, color: "#6b7280", borderLeft: "2px solid transparent", cursor: "pointer",
   },
-
-  brandName: {
-    fontFamily: "'Playfair Display', Georgia, serif",
-    fontSize: 20,
-    fontWeight: 700,
-    color: "#2c3e3a",
-    letterSpacing: "-0.01em",
+  navItemActive: { color: "#111827", fontWeight: 500, borderLeftColor: "#1d4ed8", background: "#eff6ff" },
+  navIcon: { fontSize: 15, lineHeight: 1 },
+  sidebarFooter: { padding: "14px 16px", borderTop: "1px solid #ebebeb", display: "flex", flexDirection: "column", gap: 8 },
+  userRowBtn: {
+    display: "flex", alignItems: "center", gap: 9, width: "100%", padding: "7px 8px",
+    background: "transparent", border: "none", borderRadius: 8, cursor: "pointer", textAlign: "left",
   },
-
-  logoutButton: {
-    padding: "9px 20px",
-    border: "1.5px solid rgba(220,38,38,0.4)",
-    borderRadius: 100,
-    background: "transparent",
-    color: "#dc2626",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-    transition: "background 0.2s ease",
+  avatar: {
+    width: 32, height: 32, borderRadius: "50%",
+    background: "linear-gradient(135deg, #dbeafe, #bfdbfe)",
+    color: "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: 11, fontWeight: 700, flexShrink: 0,
   },
-
-  welcome: {
-    marginBottom: "28px",
+  userInfo: { flex: 1, minWidth: 0 },
+  userName: { fontSize: 12, fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  userRole: { fontSize: 11, color: "#9ca3af" },
+  chevron: { fontSize: 9, color: "#9ca3af", flexShrink: 0 },
+  profileModal: {
+    position: "absolute", bottom: "calc(100% + 6px)", left: 0, right: 0,
+    background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12,
+    boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 100, overflow: "hidden", padding: "6px 0",
   },
-
-  welcomeTitle: {
-    fontFamily: "'Playfair Display', Georgia, serif",
-    fontSize: "32px",
-    fontWeight: 700,
-    color: "#2c3e3a",
-    marginBottom: "8px",
-    letterSpacing: "-0.02em",
+  profileModalHeader: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 10px" },
+  profileModalAvatar: {
+    width: 38, height: 38, borderRadius: "50%",
+    background: "linear-gradient(135deg, #dbeafe, #bfdbfe)",
+    color: "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: 13, fontWeight: 700, flexShrink: 0,
   },
-
-  welcomeText: {
-    fontSize: "15px",
-    color: "#5a6e6a",
+  profileModalName: { fontSize: 13, fontWeight: 600, color: "#111827" },
+  profileModalEmail: { fontSize: 11, color: "#9ca3af", marginTop: 1 },
+  profileModalBadge: {
+    display: "inline-block", marginTop: 4, padding: "2px 7px",
+    background: "#eff6ff", color: "#1d4ed8", fontSize: 10, fontWeight: 600, borderRadius: 999,
   },
-
-  profileCard: {
-    background: "#ffffff",
-    padding: "24px 28px",
-    borderRadius: 20,
-    boxShadow: "0 8px 32px rgba(45,106,100,0.08), 0 2px 8px rgba(0,0,0,0.04)",
-    border: "1px solid rgba(45,106,100,0.08)",
-    marginBottom: "28px",
-    maxWidth: "420px",
+  profileModalDivider: { height: 1, background: "#f3f4f6", margin: "4px 0" },
+  profileModalItem: {
+    display: "flex", alignItems: "center", gap: 8, padding: "8px 14px",
+    fontSize: 12, color: "#374151", cursor: "pointer",
   },
-
-  profileTitle: {
-    fontFamily: "'Playfair Display', Georgia, serif",
-    fontSize: "17px",
-    fontWeight: 700,
-    color: "#2c3e3a",
-    marginBottom: "16px",
-    letterSpacing: "-0.01em",
+  logoutBtn: {
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%",
+    padding: "7px 12px", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8,
+    cursor: "pointer", color: "#6b7280", fontSize: 12, fontWeight: 500,
   },
-
-  profileGrid: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
+  main: { flex: 1, padding: "28px 32px", overflowY: "auto" },
+  topbar: { marginBottom: 22 },
+  pageTitle: { fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 4, letterSpacing: "-0.01em" },
+  pageSub: { fontSize: 13, color: "#6b7280" },
+  statsGrid: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 16 },
+  statCard: { background: "#ffffff", border: "1px solid #f0f0f0", borderRadius: 12, padding: "16px 18px" },
+  statIconBox: { width: 46, height: 46, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  statLabel: { fontSize: 12, color: "#9ca3af", fontWeight: 500, marginBottom: 6 },
+  statVal: { fontSize: 28, fontWeight: 700, color: "#111827", lineHeight: 1 },
+  panel: { background: "#ffffff", border: "1px solid #f0f0f0", borderRadius: 12, padding: "18px 20px" },
+  panelHeader: { marginBottom: 14 },
+  panelTitle: { fontSize: 14, fontWeight: 600, color: "#111827" },
+  mgmtGrid: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 },
+  mgmtCard: {
+    display: "flex", alignItems: "center", gap: 12, padding: "14px",
+    border: "1px solid #f0f0f0", borderRadius: 10, background: "#ffffff", cursor: "pointer",
+    transition: "background 0.15s, border-color 0.15s, transform 0.15s",
   },
-
-  profileRow: {
-    display: "flex",
-    gap: 12,
-    fontSize: 14,
-  },
-
-  profileLabel: {
-    fontWeight: 600,
-    color: "#2c3e3a",
-    minWidth: 50,
-  },
-
-  profileValue: {
-    color: "#5a6e6a",
-    textTransform: "capitalize",
-  },
-
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: "20px",
-  },
-
-  card: {
-    background: "#ffffff",
-    padding: "28px 26px",
-    borderRadius: 20,
-    boxShadow: "0 8px 32px rgba(45,106,100,0.08), 0 2px 8px rgba(0,0,0,0.04)",
-    border: "1px solid rgba(45,106,100,0.08)",
-    transition: "box-shadow 0.25s ease, transform 0.25s ease",
-    cursor: "default",
-  },
-
-  cardIcon: {
-    fontSize: 28,
-    marginBottom: 14,
-  },
-
-  cardTitle: {
-    fontFamily: "'Playfair Display', Georgia, serif",
-    fontSize: "17px",
-    fontWeight: 700,
-    color: "#2c3e3a",
-    marginBottom: "8px",
-    letterSpacing: "-0.01em",
-  },
-
-  cardText: {
-    fontSize: "14px",
-    color: "#5a6e6a",
-    marginBottom: "20px",
-    lineHeight: 1.6,
-  },
-
-  cardButton: {
-    padding: "10px 22px",
-    border: "none",
-    borderRadius: 100,
-    background: "linear-gradient(135deg, #2d6a64 0%, #245854 100%)",
-    color: "white",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-    boxShadow: "0 4px 14px rgba(45,106,100,0.2)",
-    transition: "transform 0.2s ease, box-shadow 0.2s ease",
-  },
+  mgmtIcon: { width: 38, height: 38, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  mgmtTitle: { fontSize: 13, fontWeight: 600, color: "#111827", marginBottom: 2 },
+  mgmtDesc: { fontSize: 11, color: "#9ca3af", lineHeight: 1.4 },
+  mgmtArrow: { marginLeft: "auto", fontSize: 14, color: "#d1d5db", flexShrink: 0 },
 };
 
 export default AdminDashboard;

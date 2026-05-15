@@ -13,6 +13,7 @@ import SubmitClaim from "./pages/SubmitClaim";
 import ClaimStatus from "./pages/ClaimStatus";
 
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminProfile from "./pages/AdminProfile";       
 import ManageUsers from "./pages/ManageUsers";
 import ManageLostItems from "./pages/ManageLostItems";
 import ManageFoundItems from "./pages/ManageFoundItems";
@@ -103,6 +104,16 @@ function App() {
         element={
           <ProtectedRoute role="admin">
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ADMIN PROFILE */}
+      <Route                                           
+        path="/admin/profile"
+        element={
+          <ProtectedRoute role="admin">
+            <AdminProfile />
           </ProtectedRoute>
         }
       />
