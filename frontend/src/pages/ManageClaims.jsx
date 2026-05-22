@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
 import { Link } from "react-router-dom";
+import Pagination from "../components/Pagination";
+
+const ITEMS_PER_PAGE = 6;
 
 const statusConfig = {
   pending:        { label: "Pending",         bg: "rgba(100,116,139,0.1)", color: "#475569" },
@@ -11,20 +14,31 @@ const statusConfig = {
 };
 
 const ManageClaims = () => {
-  const [claims, setClaims] = useState([]);
-  const [message, setMessage] = useState("");
+  const [claims, setClaims]           = useState([]);
+  const [message, setMessage]         = useState("");
   const [adminMessages, setAdminMessages] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages]   = useState(1);
+  const [totalItems, setTotalItems]   = useState(0);
 
-  const fetchClaims = async () => {
+  const fetchClaims = async (page = 1) => {
     try {
-      const res = await API.get("/claim");
-      setClaims(res.data);
+      const res = await API.get(`/claim?page=${page}&limit=${ITEMS_PER_PAGE}`);
+      setClaims(res.data.claims);        // ← fixed
+      setCurrentPage(res.data.currentPage);
+      setTotalPages(res.data.totalPages);
+      setTotalItems(res.data.totalItems);
     } catch {
       setMessage("Failed to load claims.");
     }
   };
 
-  useEffect(() => { fetchClaims(); }, []);
+  useEffect(() => { fetchClaims(1); }, []);
+
+  const handlePageChange = (page) => {
+    fetchClaims(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleAction = async (id, action) => {
     try {
@@ -32,7 +46,7 @@ const ManageClaims = () => {
         message: adminMessages[id] || "",
       });
       setMessage(`Claim ${action.replace("-", " ")} successfully.`);
-      fetchClaims();
+      fetchClaims(currentPage);
     } catch (error) {
       setMessage(error?.response?.data?.message || "Action failed.");
     }
@@ -54,7 +68,10 @@ const ManageClaims = () => {
 
         <div style={styles.pageTitle}>
           <h1 style={styles.title}>Manage Claims</h1>
-          <p style={styles.subtitle}>{claims.length} claim{claims.length !== 1 ? "s" : ""} submitted</p>
+          <p style={styles.subtitle}>
+            {totalItems} claim{totalItems !== 1 ? "s" : ""} submitted
+            {totalPages > 1 && ` · Page ${currentPage} of ${totalPages}`}
+          </p>
         </div>
 
         {message && (
@@ -69,103 +86,104 @@ const ManageClaims = () => {
             <p style={{ color: "#5a6e6a", fontSize: 14 }}>No claims submitted yet.</p>
           </div>
         ) : (
-          <div style={styles.claimsList}>
-            {claims.map((claim) => {
-              const status = statusConfig[claim.status] || statusConfig.pending;
-              return (
-                <div key={claim._id} style={styles.card}>
+          <>
+            <div style={styles.claimsList}>
+              {claims.map((claim) => {
+                const status = statusConfig[claim.status] || statusConfig.pending;
+                return (
+                  <div key={claim._id} style={styles.card}>
 
-                  {/* Card header */}
-                  <div style={styles.cardHeader}>
-                    <div>
-                      <div style={styles.cardItemName}>
-                        {claim.lostId?.itemName || claim.foundId?.itemName || "Unknown Item"}
+                    <div style={styles.cardHeader}>
+                      <div>
+                        <div style={styles.cardItemName}>
+                          {claim.lostId?.itemName || claim.foundId?.itemName || "Unknown Item"}
+                        </div>
+                        <div style={styles.cardItemMeta}>
+                          {claim.claimantUser?.fullName} · {claim.claimantUser?.email}
+                        </div>
                       </div>
-                      <div style={styles.cardItemMeta}>
-                        {claim.claimantUser?.fullName} · {claim.claimantUser?.email}
+                      <span style={{ ...styles.statusBadge, background: status.bg, color: status.color }}>
+                        {status.label}
+                      </span>
+                    </div>
+
+                    {claim.description && (
+                      <div style={styles.infoBox}>
+                        <div style={styles.infoBoxLabel}>Claim description</div>
+                        <p style={styles.infoBoxText}>{claim.description}</p>
                       </div>
-                    </div>
-                    <span style={{ ...styles.statusBadge, background: status.bg, color: status.color }}>
-                      {status.label}
-                    </span>
-                  </div>
+                    )}
 
-                  {/* Description */}
-                  {claim.description && (
-                    <div style={styles.infoBox}>
-                      <div style={styles.infoBoxLabel}>Claim description</div>
-                      <p style={styles.infoBoxText}>{claim.description}</p>
-                    </div>
-                  )}
-
-                  {/* User response */}
-                  {claim.userResponse && (
-                    <div style={{ ...styles.infoBox, background: "#f0fdf4", border: "1px solid rgba(16,185,129,0.2)" }}>
-                      <div style={{ ...styles.infoBoxLabel, color: "#059669" }}>User response</div>
-                      <p style={styles.infoBoxText}>{claim.userResponse}</p>
-                    </div>
-                  )}
-
-                  {/* Proof images */}
-                  {claim.proofImages?.length > 0 && (
-                    <div style={{ marginBottom: 14 }}>
-                      <div style={styles.infoBoxLabel}>Proof files</div>
-                      <div style={styles.proofGrid}>
-                        {claim.proofImages.map((file, i) =>
-                          /\.(jpg|jpeg|png|gif|webp)/i.test(file) ? (
-                            <img key={i} src={file} alt={`proof-${i}`} style={styles.proofImg} />
-                          ) : (
-                            <a key={i} href={file} target="_blank" rel="noreferrer" style={styles.proofLink}>
-                              📄 File {i + 1}
-                            </a>
-                          )
-                        )}
+                    {claim.userResponse && (
+                      <div style={{ ...styles.infoBox, background: "#f0fdf4", border: "1px solid rgba(16,185,129,0.2)" }}>
+                        <div style={{ ...styles.infoBoxLabel, color: "#059669" }}>User response</div>
+                        <p style={styles.infoBoxText}>{claim.userResponse}</p>
                       </div>
+                    )}
+
+                    {claim.proofImages?.length > 0 && (
+                      <div style={{ marginBottom: 14 }}>
+                        <div style={styles.infoBoxLabel}>Proof files</div>
+                        <div style={styles.proofGrid}>
+                          {claim.proofImages.map((file, i) =>
+                            /\.(jpg|jpeg|png|gif|webp)/i.test(file) ? (
+                              <img key={i} src={file} alt={`proof-${i}`} style={styles.proofImg} />
+                            ) : (
+                              <a key={i} href={file} target="_blank" rel="noreferrer" style={styles.proofLink}>
+                                📄 File {i + 1}
+                              </a>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Message to user (optional)</label>
+                      <textarea
+                        placeholder="Enter a message for the user…"
+                        value={adminMessages[claim._id] || ""}
+                        onChange={(e) => setAdminMessages({ ...adminMessages, [claim._id]: e.target.value })}
+                        style={styles.textarea}
+                      />
                     </div>
-                  )}
 
-                  {/* Admin message input */}
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>Message to user (optional)</label>
-                    <textarea
-                      placeholder="Enter a message for the user…"
-                      value={adminMessages[claim._id] || ""}
-                      onChange={(e) => setAdminMessages({ ...adminMessages, [claim._id]: e.target.value })}
-                      style={styles.textarea}
-                    />
+                    <div style={styles.actionRow}>
+                      <button onClick={() => handleAction(claim._id, "review")} style={styles.reviewBtn}>
+                        Mark Under Review
+                      </button>
+                      <button onClick={() => handleAction(claim._id, "request-info")} style={styles.infoBtn}>
+                        Request Info
+                      </button>
+                      <button onClick={() => handleAction(claim._id, "approve")} style={styles.approveBtn}>
+                        Approve
+                      </button>
+                      <button onClick={() => handleAction(claim._id, "reject")} style={styles.rejectBtn}>
+                        Reject
+                      </button>
+                    </div>
+
+                    {claim.logs?.length > 0 && (
+                      <details style={styles.logDetails}>
+                        <summary style={styles.logSummary}>Activity log ({claim.logs.length})</summary>
+                        <ul style={styles.logList}>
+                          {claim.logs.map((log, i) => (
+                            <li key={i} style={styles.logItem}>• {log.message}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
                   </div>
+                );
+              })}
+            </div>
 
-                  {/* Action buttons */}
-                  <div style={styles.actionRow}>
-                    <button onClick={() => handleAction(claim._id, "review")} style={styles.reviewBtn}>
-                      Mark Under Review
-                    </button>
-                    <button onClick={() => handleAction(claim._id, "request-info")} style={styles.infoBtn}>
-                      Request Info
-                    </button>
-                    <button onClick={() => handleAction(claim._id, "approve")} style={styles.approveBtn}>
-                      Approve
-                    </button>
-                    <button onClick={() => handleAction(claim._id, "reject")} style={styles.rejectBtn}>
-                      Reject
-                    </button>
-                  </div>
-
-                  {/* Activity log */}
-                  {claim.logs?.length > 0 && (
-                    <details style={styles.logDetails}>
-                      <summary style={styles.logSummary}>Activity log ({claim.logs.length})</summary>
-                      <ul style={styles.logList}>
-                        {claim.logs.map((log, i) => (
-                          <li key={i} style={styles.logItem}>• {log.message}</li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </>
         )}
       </div>
     </div>

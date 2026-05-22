@@ -15,8 +15,8 @@ const SubmitClaim = () => {
       try {
         const lost = await API.get("/lost");
         const found = await API.get("/found");
-        setLostItems(lost.data);
-        setFoundItems(found.data);
+        setLostItems(lost.data.items);   // ← fixed
+        setFoundItems(found.data.items); // ← fixed
       } catch {
         setMessage("error-load");
       }

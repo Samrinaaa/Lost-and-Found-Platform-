@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import API from "../services/api";
+import NotificationBell from "../components/NotificationBell"; 
 
 const NAV_ITEMS = [
   { icon: "🏠", label: "Dashboard",   link: "/admin" },
@@ -163,9 +164,14 @@ const AdminDashboard = () => {
 
       {/* ── Main ── */}
       <main style={styles.main}>
+        {/* ── Topbar: title + notification bell ── */}
         <div style={styles.topbar}>
-          <h1 style={styles.pageTitle}>Welcome back, {currentUser?.fullName?.split(" ")[0]} 👋</h1>
-          <p style={styles.pageSub}>Here's what's happening on your platform today.</p>
+          <div>
+            <h1 style={styles.pageTitle}>Welcome back, {currentUser?.fullName?.split(" ")[0]} 👋</h1>
+            <p style={styles.pageSub}>Here's what's happening on your platform today.</p>
+          </div>
+          {/* Notification bell sits in the top-right of the topbar */}
+          <NotificationBell />
         </div>
 
         {/* Stat cards — compact, 2-col */}
@@ -307,7 +313,15 @@ const styles = {
     cursor: "pointer", color: "#6b7280", fontSize: 12, fontWeight: 500,
   },
   main: { flex: 1, padding: "28px 32px", overflowY: "auto" },
-  topbar: { marginBottom: 22 },
+
+  // ← topbar is now a flex row so the bell floats to the right
+  topbar: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 22,
+  },
+
   pageTitle: { fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 4, letterSpacing: "-0.01em" },
   pageSub: { fontSize: 13, color: "#6b7280" },
   statsGrid: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 16 },

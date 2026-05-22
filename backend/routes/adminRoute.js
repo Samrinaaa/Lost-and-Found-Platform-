@@ -20,12 +20,16 @@ const adminOnly = async (req, res, next) => {
   }
 };
 
-// ── STATS (for admin dashboard counts) ──────────────────────
+// ── STATS ────────────────────────────────────────────────────
 router.get("/stats", auth, adminOnly, async (req, res) => {
   try {
     const cached = await getCache("admin_stats");
-    if (cached) return res.json(cached);
+    if (cached) {
+      console.log("✅ admin/stats — served from Redis cache");
+      return res.json(cached);
+    }
 
+    console.log("🔄 admin/stats — fetching from MongoDB");
     const [totalUsers, totalLost, totalFound, totalClaims] = await Promise.all([
       User.countDocuments(),
       LostItem.countDocuments(),
@@ -34,8 +38,7 @@ router.get("/stats", auth, adminOnly, async (req, res) => {
     ]);
 
     const stats = { totalUsers, totalLost, totalFound, totalClaims };
-
-    await setCache("admin_stats", stats, 120); // 2 minutes TTL
+    await setCache("admin_stats", stats, 1800); // 30 minutes TTL
 
     res.json(stats);
   } catch (error) {
@@ -45,17 +48,40 @@ router.get("/stats", auth, adminOnly, async (req, res) => {
 
 // ── USERS MANAGEMENT ─────────────────────────────────────────
 
-// GET all users
+// GET all users (with pagination)
 router.get("/users", auth, adminOnly, async (req, res) => {
   try {
-    const cached = await getCache("admin_users");
-    if (cached) return res.status(200).json(cached);
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 6;
+    const skip  = (page - 1) * limit;
 
-    const users = await User.find().select("-password");
+    // Only cache page 1
+    if (page === 1) {
+      const cached = await getCache("admin_users");
+      if (cached) {
+        console.log("✅ admin/users — served from Redis cache");
+        return res.status(200).json(cached);
+      }
+    }
 
-    await setCache("admin_users", users, 300); // 5 minutes TTL
+    console.log("🔄 admin/users — fetching from MongoDB");
+    const [users, totalItems] = await Promise.all([
+      User.find().select("-password").skip(skip).limit(limit),
+      User.countDocuments(),
+    ]);
 
-    return res.status(200).json(users);
+    const result = {
+      users,
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+    };
+
+    if (page === 1) {
+      await setCache("admin_users", result, 1800); // 30 minutes TTL
+    }
+
+    return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -80,9 +106,9 @@ router.put("/users/:id/role", auth, adminOnly, async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // Clear users cache and stats cache
     await deleteCache("admin_users");
     await deleteCache("admin_stats");
+    console.log(`🗑️  Cache cleared — admin_users, admin_stats (role update)`);
 
     return res.status(200).json({
       message: "User role updated successfully.",
@@ -108,11 +134,9 @@ router.delete("/users/:id", auth, adminOnly, async (req, res) => {
 
     await User.findByIdAndDelete(req.params.id);
 
-    // Clear users cache and stats cache
     await deleteCache("admin_users");
     await deleteCache("admin_stats");
-
-    console.log(`Admin ${req.user.id} deleted user: ${userToDelete.email}`);
+    console.log(`🗑️  Cache cleared — admin_users, admin_stats (user deleted: ${userToDelete.email})`);
 
     return res.status(200).json({ message: "User deleted successfully." });
   } catch (error) {
@@ -123,11 +147,28 @@ router.delete("/users/:id", auth, adminOnly, async (req, res) => {
 
 // ── LOST ITEMS MANAGEMENT ────────────────────────────────────
 
-// GET all lost items
+// GET all lost items (with pagination)
 router.get("/lost-items", auth, adminOnly, async (req, res) => {
   try {
-    const items = await LostItem.find().populate("userId", "fullName email");
-    return res.status(200).json(items);
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 8;
+    const skip  = (page - 1) * limit;
+
+    const [items, totalItems] = await Promise.all([
+      LostItem.find()
+        .populate("userId", "fullName email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      LostItem.countDocuments(),
+    ]);
+
+    return res.status(200).json({
+      items,
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -144,11 +185,9 @@ router.delete("/lost-items/:id", auth, adminOnly, async (req, res) => {
 
     await LostItem.findByIdAndDelete(req.params.id);
 
-    // Clear related caches
     await deleteCache("lost_items");
     await deleteCache("admin_stats");
-
-    console.log(`Admin ${req.user.id} deleted lost item: ${item.itemName}`);
+    console.log(`🗑️  Cache cleared — lost_items, admin_stats (lost item deleted: ${item.itemName})`);
 
     return res.status(200).json({ message: "Lost item deleted successfully." });
   } catch (error) {
@@ -159,11 +198,28 @@ router.delete("/lost-items/:id", auth, adminOnly, async (req, res) => {
 
 // ── FOUND ITEMS MANAGEMENT ───────────────────────────────────
 
-// GET all found items
+// GET all found items (with pagination)
 router.get("/found-items", auth, adminOnly, async (req, res) => {
   try {
-    const items = await FoundItem.find().populate("userId", "fullName email");
-    return res.status(200).json(items);
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 8;
+    const skip  = (page - 1) * limit;
+
+    const [items, totalItems] = await Promise.all([
+      FoundItem.find()
+        .populate("userId", "fullName email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      FoundItem.countDocuments(),
+    ]);
+
+    return res.status(200).json({
+      items,
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -180,11 +236,9 @@ router.delete("/found-items/:id", auth, adminOnly, async (req, res) => {
 
     await FoundItem.findByIdAndDelete(req.params.id);
 
-    // Clear related caches
     await deleteCache("found_items");
     await deleteCache("admin_stats");
-
-    console.log(`Admin ${req.user.id} deleted found item: ${item.itemName}`);
+    console.log(`🗑️  Cache cleared — found_items, admin_stats (found item deleted: ${item.itemName})`);
 
     return res.status(200).json({ message: "Found item deleted successfully." });
   } catch (error) {
@@ -194,7 +248,6 @@ router.delete("/found-items/:id", auth, adminOnly, async (req, res) => {
 });
 
 // ── CHANGE PASSWORD ──────────────────────────────────────────
-
 router.put("/change-password", auth, adminOnly, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -212,14 +265,12 @@ router.put("/change-password", auth, adminOnly, async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // Check current password
     const bcrypt = require("bcryptjs");
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Current password is incorrect." });
     }
 
-    // Hash and save new password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
     await user.save();

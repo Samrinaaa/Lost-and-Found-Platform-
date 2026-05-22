@@ -1,38 +1,47 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../services/api";
 import { Link } from "react-router-dom";
+import Pagination from "../components/Pagination";
+
+const ITEMS_PER_PAGE = 8;
 
 const ManageLostItems = () => {
-  const [items, setItems] = useState([]);
-  const [confirmId, setConfirmId] = useState(null);
-  const [message, setMessage] = useState("");
-  const token = localStorage.getItem("token");
+  const [items, setItems]             = useState([]);
+  const [confirmId, setConfirmId]     = useState(null);
+  const [message, setMessage]         = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages]   = useState(1);
+  const [totalItems, setTotalItems]   = useState(0);
 
-  const fetchLostItems = async () => {
+  const fetchLostItems = async (page = 1) => {
     try {
-      const res = await axios.get("http://localhost:5001/api/lost", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setItems(res.data);
+      const res = await API.get(`/admin/lost-items?page=${page}&limit=${ITEMS_PER_PAGE}`);
+      setItems(res.data.items);
+      setCurrentPage(res.data.currentPage);
+      setTotalPages(res.data.totalPages);
+      setTotalItems(res.data.totalItems);
     } catch {
       setMessage("Failed to load lost items.");
     }
   };
 
+  useEffect(() => { fetchLostItems(1); }, []);
+
+  const handlePageChange = (page) => {
+    fetchLostItems(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const deleteItem = async (id) => {
     try {
-      await axios.delete(`http://localhost:5001/api/admin/lost-items/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await API.delete(`/admin/lost-items/${id}`);
       setConfirmId(null);
       setMessage("Item deleted successfully.");
-      fetchLostItems();
+      fetchLostItems(currentPage);
     } catch {
       setMessage("Failed to delete item.");
     }
   };
-
-  useEffect(() => { fetchLostItems(); }, []);
 
   return (
     <div style={styles.container}>
@@ -43,14 +52,15 @@ const ManageLostItems = () => {
       <div style={styles.content}>
         <div style={styles.header}>
           <span style={styles.brandName}>Lost and Found</span>
-          <Link to="/admin">
-            <button style={styles.backBtn}>← Back to Dashboard</button>
-          </Link>
+          <Link to="/admin"><button style={styles.backBtn}>← Back to Dashboard</button></Link>
         </div>
 
         <div style={styles.pageTitle}>
           <h1 style={styles.title}>Manage Lost Items</h1>
-          <p style={styles.subtitle}>{items.length} report{items.length !== 1 ? "s" : ""}</p>
+          <p style={styles.subtitle}>
+            {totalItems} report{totalItems !== 1 ? "s" : ""}
+            {totalPages > 1 && ` · Page ${currentPage} of ${totalPages}`}
+          </p>
         </div>
 
         {message && (
@@ -65,43 +75,41 @@ const ManageLostItems = () => {
             <p style={{ color: "#5a6e6a", fontSize: 14 }}>No lost items reported yet.</p>
           </div>
         ) : (
-          <div style={styles.grid}>
-            {items.map((item) => (
-              <div key={item._id} style={styles.card}>
-                {item.imageUrl ? (
-                  <img src={item.imageUrl} alt={item.itemName} style={styles.cardImg} />
-                ) : (
-                  <div style={styles.cardImgPlaceholder}>📦</div>
-                )}
-
-                <div style={styles.cardBody}>
-                  {item.category && (
-                    <span style={styles.categoryBadge}>{item.category}</span>
-                  )}
-                  <h3 style={styles.cardTitle}>{item.itemName}</h3>
-                  {item.description && <p style={styles.cardDesc}>{item.description}</p>}
-
-                  <div style={styles.cardMeta}>
-                    {item.locationLost && <span>📍 {item.locationLost}</span>}
-                    {item.dateLost && <span>📅 {new Date(item.dateLost).toLocaleDateString()}</span>}
-                    {item.userId?.fullName && <span>👤 {item.userId.fullName}</span>}
-                  </div>
-
-                  {confirmId === item._id ? (
-                    <div style={styles.confirmBox}>
-                      <p style={styles.confirmText}>Delete this item?</p>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => deleteItem(item._id)} style={styles.confirmBtn}>Confirm</button>
-                        <button onClick={() => setConfirmId(null)} style={styles.cancelBtn}>Cancel</button>
-                      </div>
-                    </div>
+          <>
+            <div style={styles.grid}>
+              {items.map((item) => (
+                <div key={item._id} style={styles.card}>
+                  {item.imageUrl ? (
+                    <img src={item.imageUrl} alt={item.itemName} style={styles.cardImg} />
                   ) : (
-                    <button onClick={() => setConfirmId(item._id)} style={styles.deleteBtn}>Delete</button>
+                    <div style={styles.cardImgPlaceholder}>📦</div>
                   )}
+                  <div style={styles.cardBody}>
+                    {item.category && <span style={styles.categoryBadge}>{item.category}</span>}
+                    <h3 style={styles.cardTitle}>{item.itemName}</h3>
+                    {item.description && <p style={styles.cardDesc}>{item.description}</p>}
+                    <div style={styles.cardMeta}>
+                      {item.locationLost && <span>📍 {item.locationLost}</span>}
+                      {item.dateLost && <span>📅 {new Date(item.dateLost).toLocaleDateString()}</span>}
+                      {item.userId?.fullName && <span>👤 {item.userId.fullName}</span>}
+                    </div>
+                    {confirmId === item._id ? (
+                      <div style={styles.confirmBox}>
+                        <p style={styles.confirmText}>Delete this item?</p>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button onClick={() => deleteItem(item._id)} style={styles.confirmBtn}>Confirm</button>
+                          <button onClick={() => setConfirmId(null)} style={styles.cancelBtn}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => setConfirmId(item._id)} style={styles.deleteBtn}>Delete</button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+          </>
         )}
       </div>
     </div>

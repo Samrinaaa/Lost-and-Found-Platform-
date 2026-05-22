@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import NotificationBell from "../components/NotificationBell"; // ← added
 
 const NAV_ITEMS = [
   { icon: "🏠", label: "Dashboard",    link: "/dashboard" },
@@ -86,8 +87,12 @@ const Dashboard = () => {
       <main style={styles.main}>
         {/* Topbar */}
         <div style={styles.topbar}>
-          <h1 style={styles.pageTitle}>Welcome back, {user?.fullName?.split(" ")[0]} 👋</h1>
-          <p style={styles.pageSub}>Manage your lost, found items and claims.</p>
+          <div>
+            <h1 style={styles.pageTitle}>Welcome back, {user?.fullName?.split(" ")[0]} 👋</h1>
+            <p style={styles.pageSub}>Manage your lost, found items and claims.</p>
+          </div>
+          {/* Notification bell floats to the right */}
+          <NotificationBell />
         </div>
 
         {/* Action cards */}
@@ -273,7 +278,15 @@ const styles = {
 
   /* Main */
   main: { flex: 1, padding: "28px 32px", overflowY: "auto" },
-  topbar: { marginBottom: 24 },
+
+  // ← topbar is now a flex row so the bell floats to the right
+  topbar: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 24,
+  },
+
   pageTitle: { fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 4, letterSpacing: "-0.01em" },
   pageSub: { fontSize: 13, color: "#6b7280" },
 

@@ -6,6 +6,7 @@ const sendEmail = require("../utils/sendEmail");
 const LostItem = require("../models/LostItem");
 const FoundItem = require("../models/FoundItem");
 const { uploadProof } = require("../config/cloudinary");
+const createNotification = require("../utils/createNotification");
 
 // helper middleware: admin only
 const adminOnly = async (req, res, next) => {
@@ -25,15 +26,10 @@ router.post("/", auth, uploadProof.array("proofImages", 5), async (req, res) => 
     const { lostId, foundId, description } = req.body;
 
     if (!lostId && !foundId) {
-      return res.status(400).json({
-        message: "Either lostId or foundId is required."
-      });
+      return res.status(400).json({ message: "Either lostId or foundId is required." });
     }
 
-    // Cloudinary returns full URLs in req.files[n].path
-    const uploadedProofs = req.files
-      ? req.files.map((file) => file.path)
-      : [];
+    const uploadedProofs = req.files ? req.files.map((file) => file.path) : [];
 
     const claim = new Claim({
       claimantUser: req.user.id,
@@ -41,67 +37,75 @@ router.post("/", auth, uploadProof.array("proofImages", 5), async (req, res) => 
       foundId: foundId || null,
       description: description || "",
       proofImages: uploadedProofs,
-      logs: [
-        {
-          message: uploadedProofs.length > 0
-            ? "Claim submitted with proof files"
-            : "Claim submitted"
-        }
-      ]
+      logs: [{
+        message: uploadedProofs.length > 0
+          ? "Claim submitted with proof files"
+          : "Claim submitted"
+      }]
     });
 
     await claim.save();
 
-    // SEND EMAIL TO ITEM OWNER
+    // Notify item owner + send email
     try {
       let item = null;
+      if (lostId) item = await LostItem.findById(lostId).populate("userId");
+      else if (foundId) item = await FoundItem.findById(foundId).populate("userId");
 
-      if (lostId) {
-        item = await LostItem.findById(lostId).populate("userId");
-      } else if (foundId) {
-        item = await FoundItem.findById(foundId).populate("userId");
-      }
-
-      if (item && item.userId && item.userId.email) {
-        await sendEmail(
-          item.userId.email,
-          "New Claim Submitted",
-          `<p>Someone has submitted a claim for your item: <b>${item.itemName}</b></p>`
+      if (item?.userId) {
+        await createNotification(
+          item.userId._id,
+          `Someone submitted a claim for your item: "${item.itemName}"`,
+          "claim_submitted",
+          "/claim-status"
         );
+
+        if (item.userId.email) {
+          await sendEmail(
+            item.userId.email,
+            "New Claim Submitted",
+            `<p>Someone has submitted a claim for your item: <b>${item.itemName}</b></p>`
+          );
+        }
       }
-    } catch (emailError) {
-      console.log("Email sending failed:", emailError.message);
+    } catch (err) {
+      console.log("Notification/email error:", err.message);
     }
 
-    res.status(201).json({
-      message: "Claim submitted successfully.",
-      claim
-    });
-
+    res.status(201).json({ message: "Claim submitted successfully.", claim });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// GET CLAIMS
-// admin -> all claims | user -> only their own claims
+// GET CLAIMS (with pagination)
 router.get("/", auth, async (req, res) => {
   try {
-    let claims;
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 6;
+    const skip  = (page - 1) * limit;
 
-    if (req.user.role === "admin") {
-      claims = await Claim.find()
+    const query = req.user.role === "admin"
+      ? {}
+      : { claimantUser: req.user.id };
+
+    const [claims, totalItems] = await Promise.all([
+      Claim.find(query)
         .populate("claimantUser", "fullName email")
         .populate("lostId")
-        .populate("foundId");
-    } else {
-      claims = await Claim.find({ claimantUser: req.user.id })
-        .populate("claimantUser", "fullName email")
-        .populate("lostId")
-        .populate("foundId");
-    }
+        .populate("foundId")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Claim.countDocuments(query),
+    ]);
 
-    res.json(claims);
+    res.json({
+      claims,
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -111,14 +115,19 @@ router.get("/", auth, async (req, res) => {
 router.put("/:id/review", auth, adminOnly, async (req, res) => {
   try {
     const claim = await Claim.findById(req.params.id);
-
-    if (!claim) {
-      return res.status(404).json({ message: "Claim not found" });
-    }
+    if (!claim) return res.status(404).json({ message: "Claim not found" });
 
     claim.status = "under_review";
     claim.logs.push({ message: "Admin started reviewing the claim" });
     await claim.save();
+
+    // Notify claimant
+    await createNotification(
+      claim.claimantUser,
+      "Your claim is now under review by the admin.",
+      "claim_review",
+      "/claim-status"
+    );
 
     res.json({ message: "Claim moved to under review" });
   } catch (error) {
@@ -133,27 +142,31 @@ router.put("/:id/request-info", auth, adminOnly, async (req, res) => {
 
     const claim = await Claim.findById(req.params.id)
       .populate("claimantUser", "fullName email");
-
-    if (!claim) {
-      return res.status(404).json({ message: "Claim not found" });
-    }
+    if (!claim) return res.status(404).json({ message: "Claim not found" });
 
     claim.status = "need_more_info";
     claim.adminMessage = message || "";
     claim.logs.push({ message: `Admin requested more info: ${message || ""}` });
     await claim.save();
 
-    // SEND EMAIL TO USER
+    // Notify claimant
+    await createNotification(
+      claim.claimantUser._id,
+      `Admin needs more information about your claim. Message: "${message || ""}"`,
+      "need_more_info",
+      "/claim-status"
+    );
+
     try {
-      if (claim.claimantUser && claim.claimantUser.email) {
+      if (claim.claimantUser?.email) {
         await sendEmail(
           claim.claimantUser.email,
           "More Information Required",
           `<p>Admin has requested more details: <b>${message || ""}</b></p>`
         );
       }
-    } catch (emailError) {
-      console.log("Request info email failed:", emailError.message);
+    } catch (err) {
+      console.log("Email error:", err.message);
     }
 
     res.json({ message: "Requested more information from user" });
@@ -162,33 +175,25 @@ router.put("/:id/request-info", auth, adminOnly, async (req, res) => {
   }
 });
 
-// USER: RESPOND TO ADMIN (FOLLOW-UP)
+// USER: RESPOND TO ADMIN
 router.put("/:id/respond", auth, uploadProof.array("proofImages", 5), async (req, res) => {
   try {
     const { response } = req.body;
 
     const claim = await Claim.findById(req.params.id);
-
-    if (!claim) {
-      return res.status(404).json({ message: "Claim not found" });
-    }
+    if (!claim) return res.status(404).json({ message: "Claim not found" });
 
     if (claim.claimantUser.toString() !== req.user.id) {
       return res.status(403).json({ message: "Access denied. This is not your claim." });
     }
 
-    // Cloudinary returns full URLs in req.files[n].path
-    const uploadedProofs = req.files
-      ? req.files.map((file) => file.path)
-      : [];
+    const uploadedProofs = req.files ? req.files.map((file) => file.path) : [];
 
     claim.userResponse = response || "";
     claim.status = "under_review";
-
     if (uploadedProofs.length > 0) {
       claim.proofImages = [...claim.proofImages, ...uploadedProofs];
     }
-
     claim.logs.push({
       message: uploadedProofs.length > 0
         ? `User responded with additional proof: ${response || ""}`
@@ -208,35 +213,33 @@ router.put("/:id/approve", auth, adminOnly, async (req, res) => {
   try {
     const claim = await Claim.findById(req.params.id)
       .populate("claimantUser", "fullName email");
-
-    if (!claim) {
-      return res.status(404).json({ message: "Claim not found" });
-    }
+    if (!claim) return res.status(404).json({ message: "Claim not found" });
 
     claim.status = "approved";
     claim.logs.push({ message: "Claim approved by admin" });
     await claim.save();
 
-    // UPDATE RELATED ITEM STATUS
-    if (claim.lostId) {
-      await LostItem.findByIdAndUpdate(claim.lostId, { status: "found" });
-    }
+    if (claim.lostId) await LostItem.findByIdAndUpdate(claim.lostId, { status: "found" });
+    if (claim.foundId) await FoundItem.findByIdAndUpdate(claim.foundId, { status: "claimed" });
 
-    if (claim.foundId) {
-      await FoundItem.findByIdAndUpdate(claim.foundId, { status: "claimed" });
-    }
+    // Notify claimant
+    await createNotification(
+      claim.claimantUser._id,
+      "🎉 Your claim has been approved by the admin!",
+      "claim_approved",
+      "/claim-status"
+    );
 
-    // SEND EMAIL TO CLAIM USER
     try {
-      if (claim.claimantUser && claim.claimantUser.email) {
+      if (claim.claimantUser?.email) {
         await sendEmail(
           claim.claimantUser.email,
           "Claim Approved",
           `<p>Your claim has been <b>approved</b> by admin.</p>`
         );
       }
-    } catch (emailError) {
-      console.log("Approval email failed:", emailError.message);
+    } catch (err) {
+      console.log("Email error:", err.message);
     }
 
     res.json({ message: "Claim approved successfully" });
@@ -250,26 +253,30 @@ router.put("/:id/reject", auth, adminOnly, async (req, res) => {
   try {
     const claim = await Claim.findById(req.params.id)
       .populate("claimantUser", "fullName email");
-
-    if (!claim) {
-      return res.status(404).json({ message: "Claim not found" });
-    }
+    if (!claim) return res.status(404).json({ message: "Claim not found" });
 
     claim.status = "rejected";
     claim.logs.push({ message: "Claim rejected by admin" });
     await claim.save();
 
-    // SEND EMAIL TO CLAIM USER
+    // Notify claimant
+    await createNotification(
+      claim.claimantUser._id,
+      "Your claim has been rejected by the admin.",
+      "claim_rejected",
+      "/claim-status"
+    );
+
     try {
-      if (claim.claimantUser && claim.claimantUser.email) {
+      if (claim.claimantUser?.email) {
         await sendEmail(
           claim.claimantUser.email,
           "Claim Rejected",
           `<p>Your claim has been <b>rejected</b> by admin.</p>`
         );
       }
-    } catch (emailError) {
-      console.log("Rejection email failed:", emailError.message);
+    } catch (err) {
+      console.log("Email error:", err.message);
     }
 
     res.json({ message: "Claim rejected successfully" });

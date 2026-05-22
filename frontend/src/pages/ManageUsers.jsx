@@ -1,23 +1,37 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
 import { Link } from "react-router-dom";
+import Pagination from "../components/Pagination";
+
+const ITEMS_PER_PAGE = 6;
 
 const ManageUsers = () => {
-  const [users, setUsers] = useState([]);
-  const [message, setMessage] = useState("");
+  const [users, setUsers]             = useState([]);
+  const [message, setMessage]         = useState("");
   const [pendingAction, setPendingAction] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages]   = useState(1);
+  const [totalItems, setTotalItems]   = useState(0);
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = 1) => {
     try {
-      const res = await API.get("/admin/users");
-      setUsers(res.data);
+      const res = await API.get(`/admin/users?page=${page}&limit=${ITEMS_PER_PAGE}`);
+      setUsers(res.data.users);
+      setCurrentPage(res.data.currentPage);
+      setTotalPages(res.data.totalPages);
+      setTotalItems(res.data.totalItems);
     } catch {
       setMessage("Failed to load users.");
     }
   };
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => { fetchUsers(1); }, []);
+
+  const handlePageChange = (page) => {
+    fetchUsers(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleConfirmAction = async () => {
     if (!pendingAction) return;
@@ -31,7 +45,7 @@ const ManageUsers = () => {
         setMessage(res.data.message);
       }
       setPendingAction(null);
-      fetchUsers();
+      fetchUsers(currentPage);
     } catch (error) {
       setMessage(error.response?.data?.message || "Action failed.");
       setPendingAction(null);
@@ -49,14 +63,15 @@ const ManageUsers = () => {
       <div style={styles.content}>
         <div style={styles.header}>
           <span style={styles.brandName}>Lost and Found</span>
-          <Link to="/admin">
-            <button style={styles.backBtn}>← Back to Dashboard</button>
-          </Link>
+          <Link to="/admin"><button style={styles.backBtn}>← Back to Dashboard</button></Link>
         </div>
 
         <div style={styles.pageTitle}>
           <h1 style={styles.title}>Manage Users</h1>
-          <p style={styles.subtitle}>{otherUsers.length} registered user{otherUsers.length !== 1 ? "s" : ""}</p>
+          <p style={styles.subtitle}>
+            {totalItems} registered user{totalItems !== 1 ? "s" : ""}
+            {totalPages > 1 && ` · Page ${currentPage} of ${totalPages}`}
+          </p>
         </div>
 
         {message && (
@@ -71,61 +86,47 @@ const ManageUsers = () => {
             <p style={{ color: "#5a6e6a", fontSize: 14 }}>No users found.</p>
           </div>
         ) : (
-          <div style={styles.grid}>
-            {otherUsers.map((user) => {
-              const isPending = pendingAction?.userId === user._id;
-              return (
-                <div key={user._id} style={styles.card}>
-                  {/* Avatar + name */}
-                  <div style={styles.userHeader}>
-                    <div style={styles.avatar}>
-                      {user.fullName?.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div style={styles.userName}>{user.fullName}</div>
-                      <span style={{ ...styles.roleBadge, ...(user.role === "admin" ? styles.adminBadge : styles.userBadge) }}>
-                        {user.role}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={styles.userInfo}>
-                    <div style={styles.userInfoRow}><span style={styles.userInfoLabel}>Email</span><span style={styles.userInfoValue}>{user.email}</span></div>
-                    <div style={styles.userInfoRow}><span style={styles.userInfoLabel}>Phone</span><span style={styles.userInfoValue}>{user.phone || "—"}</span></div>
-                  </div>
-
-                  {!isPending ? (
-                    <div style={styles.actionRow}>
-                      <button
-                        onClick={() => setPendingAction({ type: "role", userId: user._id, fullName: user.fullName, role: "admin" })}
-                        style={styles.makeAdminBtn}
-                      >
-                        Make Admin
-                      </button>
-                      <button
-                        onClick={() => setPendingAction({ type: "delete", userId: user._id, fullName: user.fullName })}
-                        style={styles.deleteBtn}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  ) : (
-                    <div style={styles.confirmBox}>
-                      <p style={{ fontSize: 13, color: "#2c3e3a", marginBottom: 12, fontWeight: 500 }}>
-                        {pendingAction.type === "delete"
-                          ? `Delete "${pendingAction.fullName}"?`
-                          : `Make "${pendingAction.fullName}" an admin?`}
-                      </p>
-                      <div style={{ display: "flex", gap: 10 }}>
-                        <button onClick={handleConfirmAction} style={styles.confirmBtn}>Confirm</button>
-                        <button onClick={() => setPendingAction(null)} style={styles.cancelBtn}>Cancel</button>
+          <>
+            <div style={styles.grid}>
+              {otherUsers.map((user) => {
+                const isPending = pendingAction?.userId === user._id;
+                return (
+                  <div key={user._id} style={styles.card}>
+                    <div style={styles.userHeader}>
+                      <div style={styles.avatar}>{user.fullName?.charAt(0).toUpperCase()}</div>
+                      <div>
+                        <div style={styles.userName}>{user.fullName}</div>
+                        <span style={{ ...styles.roleBadge, ...(user.role === "admin" ? styles.adminBadge : styles.userBadge) }}>
+                          {user.role}
+                        </span>
                       </div>
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                    <div style={styles.userInfo}>
+                      <div style={styles.userInfoRow}><span style={styles.userInfoLabel}>Email</span><span style={styles.userInfoValue}>{user.email}</span></div>
+                      <div style={styles.userInfoRow}><span style={styles.userInfoLabel}>Phone</span><span style={styles.userInfoValue}>{user.phone || "—"}</span></div>
+                    </div>
+                    {!isPending ? (
+                      <div style={styles.actionRow}>
+                        <button onClick={() => setPendingAction({ type: "role", userId: user._id, fullName: user.fullName, role: "admin" })} style={styles.makeAdminBtn}>Make Admin</button>
+                        <button onClick={() => setPendingAction({ type: "delete", userId: user._id, fullName: user.fullName })} style={styles.deleteBtn}>Delete</button>
+                      </div>
+                    ) : (
+                      <div style={styles.confirmBox}>
+                        <p style={{ fontSize: 13, color: "#2c3e3a", marginBottom: 12, fontWeight: 500 }}>
+                          {pendingAction.type === "delete" ? `Delete "${pendingAction.fullName}"?` : `Make "${pendingAction.fullName}" an admin?`}
+                        </p>
+                        <div style={{ display: "flex", gap: 10 }}>
+                          <button onClick={handleConfirmAction} style={styles.confirmBtn}>Confirm</button>
+                          <button onClick={() => setPendingAction(null)} style={styles.cancelBtn}>Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+          </>
         )}
       </div>
     </div>

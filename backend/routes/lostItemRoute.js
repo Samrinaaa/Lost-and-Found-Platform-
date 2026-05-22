@@ -15,8 +15,6 @@ router.post("/", auth, uploadItem.single("image"), async (req, res) => {
     });
 
     await item.save();
-
-    // Clear cache so next GET fetches fresh data from MongoDB
     await deleteCache("lost_items");
 
     res.status(201).json(item);
@@ -25,37 +23,55 @@ router.post("/", auth, uploadItem.single("image"), async (req, res) => {
   }
 });
 
-// GET ALL LOST ITEMS
+// GET ALL LOST ITEMS (with search + pagination)
 router.get("/", async (req, res) => {
   try {
     const search = req.query.search || "";
+    const page   = parseInt(req.query.page)  || 1;
+    const limit  = parseInt(req.query.limit) || 6;
+    const skip   = (page - 1) * limit;
 
-    // Only use cache when there is no search query
-    if (!search) {
+    const query = search
+      ? {
+          $or: [
+            { itemName:    { $regex: search, $options: "i" } },
+            { description: { $regex: search, $options: "i" } },
+            { locationLost:{ $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+
+    // Only cache the first page with no search
+    if (!search && page === 1) {
       const cached = await getCache("lost_items");
       if (cached) {
+        console.log("✅ lost_items page 1 — served from Redis cache");
         return res.json(cached);
       }
     }
 
-    const items = await LostItem.find(
-      search
-        ? {
-            $or: [
-              { itemName: { $regex: search, $options: "i" } },
-              { description: { $regex: search, $options: "i" } },
-              { locationLost: { $regex: search, $options: "i" } },
-            ],
-          }
-        : {}
-    ).populate("userId", "fullName email");
+    const [items, totalItems] = await Promise.all([
+      LostItem.find(query)
+        .populate("userId", "fullName email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      LostItem.countDocuments(query),
+    ]);
 
-    // Cache only the full unfiltered list
-    if (!search) {
-      await setCache("lost_items", items, 300); // 5 minutes TTL
+    const result = {
+      items,
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+    };
+
+    if (!search && page === 1) {
+      await setCache("lost_items", result, 300);
+      console.log("🔄 lost_items page 1 — fetched from MongoDB");
     }
 
-    res.json(items);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -65,8 +81,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const item = await LostItem.findById(req.params.id).populate(
-      "userId",
-      "fullName email"
+      "userId", "fullName email"
     );
     res.json(item);
   } catch (error) {
@@ -88,8 +103,6 @@ router.delete("/:id", auth, async (req, res) => {
     }
 
     await LostItem.findByIdAndDelete(req.params.id);
-
-    // Clear cache
     await deleteCache("lost_items");
 
     res.json({ message: "Lost item deleted successfully" });
