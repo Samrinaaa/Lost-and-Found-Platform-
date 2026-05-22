@@ -1,9 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const LostItem = require("../models/LostItem");
+const User = require("../models/User");                         
 const auth = require("../middleware/auth");
 const { uploadItem } = require("../config/cloudinary");
 const { getCache, setCache, deleteCache } = require("../config/redis");
+const createNotification = require("../utils/createNotification"); 
 
 // ADD LOST ITEM
 router.post("/", auth, uploadItem.single("image"), async (req, res) => {
@@ -16,6 +18,28 @@ router.post("/", auth, uploadItem.single("image"), async (req, res) => {
 
     await item.save();
     await deleteCache("lost_items");
+
+    // Notify the user who posted
+    await createNotification(
+      req.user.id,
+      `Your lost item "${item.itemName}" has been posted successfully.`,
+      "item_posted",
+      "/lost-items"
+    );
+
+    // Notify all admins
+    const poster = await User.findById(req.user.id, "fullName"); // ← fetch actual name
+    const admins = await User.find({ role: "admin" }, "_id");
+    await Promise.all(
+      admins.map((admin) =>
+        createNotification(
+          admin._id,
+          `A new lost item "${item.itemName}" has been posted by ${poster?.fullName || "a user"}.`,
+          "item_posted",
+          "/admin/lost-items"
+        )
+      )
+    );
 
     res.status(201).json(item);
   } catch (error) {

@@ -13,7 +13,16 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["claim_submitted", "claim_approved", "claim_rejected", "claim_review", "need_more_info", "role_changed"],
+      enum: [
+        "claim_submitted",
+        "claim_approved",
+        "claim_rejected",
+        "claim_review",
+        "need_more_info",
+        "role_changed",
+        "item_posted",  
+        "match_found",   
+      ],
       default: "claim_submitted",
     },
     isRead: {

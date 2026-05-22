@@ -3,7 +3,7 @@ import API from "../services/api";
 import { Link } from "react-router-dom";
 import Pagination from "../components/Pagination";
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 3;
 
 const ManageLostItems = () => {
   const [items, setItems]             = useState([]);

@@ -4,6 +4,7 @@ const LostItem = require("../models/LostItem");
 const FoundItem = require("../models/FoundItem");
 const auth = require("../middleware/auth");
 const { getCache, setCache } = require("../config/redis");
+const createNotification = require("../utils/createNotification");
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -88,6 +89,16 @@ router.get("/lost/:lostId", auth, async (req, res) => {
       .sort((a, b) => b.score - a.score)
       .slice(0, 5);
 
+    // Notify the lost item owner if matches were found
+    if (matches.length > 0) {
+      await createNotification(
+        lostItem.userId,
+        `${matches.length} potential match${matches.length > 1 ? "es" : ""} found for your lost item "${lostItem.itemName}"!`,
+        "match_found",
+        `/lost-items`
+      );
+    }
+
     const result = {
       lostItem,
       matches: matches.map((m) => ({
@@ -126,6 +137,16 @@ router.get("/found/:foundId", auth, async (req, res) => {
       .filter((m) => m.score >= 40)
       .sort((a, b) => b.score - a.score)
       .slice(0, 5);
+
+    // Notify the found item owner if matches were found
+    if (matches.length > 0) {
+      await createNotification(
+        foundItem.userId,
+        `${matches.length} potential match${matches.length > 1 ? "es" : ""} found for your found item "${foundItem.itemName}"!`,
+        "match_found",
+        `/found-items`
+      );
+    }
 
     const result = {
       foundItem,
