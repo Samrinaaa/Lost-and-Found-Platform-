@@ -11,7 +11,7 @@ const statusColors = {
   closed:  { bg: "rgba(100,116,139,0.1)", color: "#475569" },
 };
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 3;
 
 const ViewFoundItems = () => {
   const [foundItems, setFoundItems]     = useState([]);

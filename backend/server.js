@@ -29,12 +29,12 @@ app.get("/", (req, res) => {
 });
 
 // Use Routes
-app.use("/api/auth",         authRoute);
-app.use("/api/lost",         lostItemRoute);
-app.use("/api/found",        foundItemRoute);
-app.use("/api/claim",        claimRoute);
-app.use("/api/admin",        adminRoute);
-app.use("/api/match",        matchRoute);
+app.use("/api/auth",authRoute);
+app.use("/api/lost",lostItemRoute);
+app.use("/api/found",foundItemRoute);
+app.use("/api/claim",claimRoute);
+app.use("/api/admin",adminRoute);
+app.use("/api/match",matchRoute);
 app.use("/api/notifications",notificationRoute);
 
 // Start server
