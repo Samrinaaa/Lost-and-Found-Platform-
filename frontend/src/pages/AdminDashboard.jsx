@@ -314,7 +314,6 @@ const styles = {
   },
   main: { flex: 1, padding: "28px 32px", overflowY: "auto" },
 
-  // ← topbar is now a flex row so the bell floats to the right
   topbar: {
     display: "flex",
     alignItems: "flex-start",
